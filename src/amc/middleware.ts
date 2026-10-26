@@ -3,8 +3,9 @@
  * fallbacks may outlive that) and run the rest of the request inside `pinsState`.
  *
  * The envelope binds `configHash` = SHA-256 hex of the exact `x-portkey-config` header and `requestId` = the
- * `x-amc-request-id` header. An absent or invalid header leaves `envelope: null`; with `EGRESS_PINS_REQUIRED=1`
- * that refuses every upstream fetch.
+ * `x-amc-request-id` header. A present-but-invalid header (bad MAC/hash/id/exp, oversized, or no key configured)
+ * refuses every upstream fetch whatever `EGRESS_PINS_REQUIRED` says; an absent header refuses only when
+ * `EGRESS_PINS_REQUIRED=1`, else the request keeps upstream behaviour.
  */
 import type { Context, Next } from 'hono';
 import { env } from 'hono/adapter';
@@ -45,5 +46,8 @@ export async function amcEgressPins(c: Context, next: Next) {
         required,
       })
     );
-  return pinsState.run({ envelope, required, requestId }, () => next());
+  const headerInvalid = !!header && !envelope;
+  return pinsState.run({ envelope, required, headerInvalid, requestId }, () =>
+    next()
+  );
 }

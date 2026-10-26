@@ -16,6 +16,8 @@ export type PinsState = {
   envelope: PinsEnvelope | null;
   /** `EGRESS_PINS_REQUIRED=1`: no valid envelope ⇒ refuse every upstream fetch. */
   required: boolean;
+  /** A pins header was present but did not verify: refuse every upstream fetch, whatever `required` says. */
+  headerInvalid: boolean;
   requestId: string;
 };
 
@@ -52,6 +54,7 @@ export function currentPinsState(): PinsState {
     pinsState.getStore() ?? {
       envelope: null,
       required: requiredLatched,
+      headerInvalid: false,
       requestId: '',
     }
   );

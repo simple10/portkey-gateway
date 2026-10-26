@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import vectors from './__fixtures__/egress-pins-vectors.json';
 import {
   capabilityProbe,
+  PINS_MAX_HEADER_BYTES,
   PinsEnvelope,
   signPins,
   verifyPins,
 } from './egress-pins';
-import type { DestRow } from './destinations';
+import { destinationCovers, DestRow } from './destinations';
 import { checkEgress } from './check';
 import { leafScope, pinsState, toLeafPath, withLeafScope } from './scope';
 import { pinnedFetch } from './fetch';
@@ -78,6 +79,31 @@ describe('vectors (byte-for-byte cross-repo contract)', () => {
     });
   });
 
+  it('destinationCovers matches every destination vector (shared asserts the same file)', () => {
+    expect(vectors.destinations.length).toBeGreaterThanOrEqual(20);
+    for (const d of vectors.destinations)
+      expect({ url: d.url, covers: destinationCovers(d.row, d.url) }).toEqual({
+        url: d.url,
+        covers: d.covers,
+      });
+  });
+
+  it(`refuses a header over PINS_MAX_HEADER_BYTES (${PINS_MAX_HEADER_BYTES}) and an empty key`, async () => {
+    const p = vectors.pins[1];
+    const env = p.envelope as unknown as PinsEnvelope;
+    const now = env.exp - 1;
+    const big = 'A'.repeat(PINS_MAX_HEADER_BYTES + 1);
+    expect(big.length).toBe(16385);
+    expect(
+      await verifyPins(big, p.key, now, env.configHash, env.requestId)
+    ).toBeNull();
+    expect(
+      await verifyPins(p.header, '', now, env.configHash, env.requestId)
+    ).toBeNull();
+    await expect(signPins(env, '')).rejects.toThrow(/empty/);
+    await expect(capabilityProbe('n', '')).rejects.toThrow(/empty/);
+  });
+
   it('a wrong configHash / requestId / key, or a flipped byte, does not verify', async () => {
     const p = vectors.pins[1];
     const env = p.envelope as unknown as PinsEnvelope;
@@ -129,6 +155,20 @@ describe('checkEgress — per-fetch all-of', () => {
     expect(checkEgress(escaped, provider, twoSlugs, { required: false })).toBe(
       'deny'
     );
+  });
+
+  it('a ;-parameter traversal (..;x, %2e%2e;) never escapes a path pin', () => {
+    for (const tail of ['..;x', '%2e%2e;', '%2E%2E;jsessionid=1'])
+      expect(
+        checkEgress(
+          `${CF}/v1/acctA/gwA/${tail}/acctB/gwB/x`,
+          provider,
+          twoSlugs,
+          {
+            required: false,
+          }
+        )
+      ).toBe('deny');
   });
 
   it('a credential:entra fetch is checked against its own slug set, not the provider leaf', () => {
@@ -194,6 +234,12 @@ describe('checkEgress — per-fetch all-of', () => {
     expect(checkEgress(`${CF}/x`, provider, null, { required: true })).toBe(
       'deny'
     );
+    expect(
+      checkEgress(`${CF}/x`, provider, null, {
+        required: false,
+        headerInvalid: true,
+      })
+    ).toBe('deny');
   });
 });
 
@@ -218,6 +264,7 @@ describe('pinnedFetch — modes and redirects', () => {
   const state = (env: PinsEnvelope | null, required = false) => ({
     envelope: env,
     required,
+    headerInvalid: false,
     requestId: 'r',
   });
   const pinned = envelope({
@@ -305,6 +352,106 @@ describe('pinnedFetch — modes and redirects', () => {
     });
   });
 
+  it('a 303 hop becomes a bodiless GET without content headers', async () => {
+    fetchMock.mockImplementationOnce(
+      async () =>
+        new Response(null, {
+          status: 303,
+          headers: { location: '/v1/acctA/gwA/result' },
+        })
+    );
+    await pinsState.run(state(pinned), () =>
+      leafScope.run(provider, () =>
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          {
+            method: 'POST',
+            body: '{"a":1}',
+            headers: {
+              'content-type': 'application/json',
+              'content-length': '7',
+              a: 'b',
+            },
+          },
+          leafScope.getStore()
+        )
+      )
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const second = fetchMock.mock.calls[1][1];
+    expect(second.method).toBe('GET');
+    expect(second.body).toBeUndefined();
+    const h = new Headers(second.headers);
+    expect(h.get('content-type')).toBeNull();
+    expect(h.get('content-length')).toBeNull();
+    expect(h.get('a')).toBe('b');
+  });
+
+  it('a cross-origin hop drops authorization (a same-origin hop keeps it)', async () => {
+    const other = 'https://other.example';
+    const env = envelope({
+      fetches: {
+        '$.targets[0]|provider': { X: [acctA, row(other)] },
+      },
+    });
+    fetchMock
+      .mockImplementationOnce(
+        async () =>
+          new Response(null, {
+            status: 307,
+            headers: { location: '/v1/acctA/gwA/y' },
+          })
+      )
+      .mockImplementationOnce(
+        async () =>
+          new Response(null, {
+            status: 307,
+            headers: { location: `${other}/z` },
+          })
+      );
+    await pinsState.run(state(env), () =>
+      leafScope.run(provider, () =>
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          {
+            method: 'GET',
+            headers: { authorization: 'Bearer t', cookie: 'c=1' },
+          },
+          leafScope.getStore()
+        )
+      )
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const auth = (i: number) =>
+      new Headers(fetchMock.mock.calls[i][1].headers).get('authorization');
+    expect(auth(1)).toBe('Bearer t');
+    expect(auth(2)).toBeNull();
+    expect(
+      new Headers(fetchMock.mock.calls[2][1].headers).get('cookie')
+    ).toBeNull();
+  });
+
+  it('a 307 with a ReadableStream body is not followed: the 3xx comes back', async () => {
+    fetchMock.mockImplementationOnce(
+      async () =>
+        new Response(null, {
+          status: 307,
+          headers: { location: '/v1/acctA/gwA/y' },
+        })
+    );
+    const res = await pinsState.run(state(pinned), () =>
+      leafScope.run(provider, () =>
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          { method: 'POST', body: new ReadableStream() },
+          leafScope.getStore()
+        )
+      )
+    );
+    expect(res.status).toBe(307);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('never forwards the pins headers upstream', async () => {
     await pinsState.run(state(pinned), () =>
       leafScope.run(provider, () =>
@@ -382,6 +529,22 @@ describe('request middleware', () => {
       '1'
     );
     expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a present-but-invalid header refuses every fetch even with EGRESS_PINS_REQUIRED=0', async () => {
+    const env = envelope({
+      configHash: await sha256Hex('{"provider":"other"}'),
+      requestId: 'req-1',
+      fetches: { '$.targets[0]|provider': { X: [acctA] } },
+    });
+    for (const header of [await signPins(env, KEY), 'garbage']) {
+      const res = await call(
+        { 'x-amc-egress-pins': header, 'x-amc-request-id': 'req-1' },
+        '0'
+      );
+      expect(res.status).toBe(403);
+    }
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

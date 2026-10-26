@@ -8,6 +8,12 @@
  *   probe  = { nonce, mac: base64url(HMAC-SHA256(key, "amc.egress-pins.capability.v1\n" + nonce)) }
  *
  * The HMAC key is the UTF-8 bytes of the `EGRESS_PINS_HMAC_KEY` secret; base64url carries no padding.
+ *
+ * `requestId` binding is nominal: the fork compares it with the `x-amc-request-id` header of the SAME request, which
+ * llm sets alongside the pins header, so it cannot stop a captured header being replayed together with its request
+ * id. What bounds a replay is `configHash` (pins apply only to the exact config they were built for), the 60 s
+ * `exp`, and the llm→portkey link being private (a service binding; `workers_dev`/`preview_urls` off). The id still
+ * ties the log records on both sides (`secret.destination_unbound`) to one request.
  */
 import { jcs } from './jcs';
 import type { DestRow } from './destinations';
@@ -39,6 +45,13 @@ export const REQUEST_ID_HEADER = 'x-amc-request-id';
 
 /** The longest an envelope may live (`exp ≤ now + 60 s`). */
 export const PINS_MAX_TTL_MS = 60_000;
+
+/** The largest header `verifyPins` will look at; anything longer is refused before any decoding or MAC work. */
+export const PINS_MAX_HEADER_BYTES = 16384;
+
+function requireKey(key: string): void {
+  if (!key) throw new Error('egress-pins: the HMAC key is empty');
+}
 
 const CAPABILITY_PREFIX = 'amc.egress-pins.capability.v1\n';
 const enc = new TextEncoder();
@@ -92,6 +105,7 @@ export async function signPins(
   env: PinsEnvelope,
   key: string
 ): Promise<string> {
+  requireKey(key);
   const payload = utf8(jcs(env));
   return `${b64u(payload)}.${b64u(await mac(key, payload))}`;
 }
@@ -139,7 +153,8 @@ function isEnvelope(v: unknown): v is PinsEnvelope {
 }
 
 /**
- * Verify a header and return its envelope, or `null` (never throws): the MAC must verify under `key`, the payload
+ * Verify a header and return its envelope, or `null` (never throws): the key must be non-empty, the header at most
+ * {@link PINS_MAX_HEADER_BYTES}, the MAC must verify under `key`, the payload
  * must be canonical JCS of a well-formed envelope, `configHash`/`requestId` must equal the request's own, and
  * `now < exp ≤ now + 60 s`.
  */
@@ -150,6 +165,7 @@ export async function verifyPins(
   configHash: string,
   requestId: string
 ): Promise<PinsEnvelope | null> {
+  if (!key || header.length > PINS_MAX_HEADER_BYTES) return null;
   const parts = header.split('.');
   if (parts.length !== 2) return null;
   const payload = fromB64u(parts[0]!);
@@ -178,5 +194,6 @@ export async function capabilityProbe(
   nonce: string,
   key: string
 ): Promise<{ nonce: string; mac: string }> {
+  requireKey(key);
   return { nonce, mac: b64u(await mac(key, utf8(CAPABILITY_PREFIX + nonce))) };
 }

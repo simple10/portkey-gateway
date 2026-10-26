@@ -33,7 +33,7 @@ function bareFetchHits(): Hit[] {
       readFileSync(abs, 'utf8')
         .split('\n')
         .forEach((text, i) => {
-          if (/(^|[^\w$])fetch\s*\(/.test(text))
+          if (/(^|[^\w$])fetch\s*\(|\bnew\s+WebSocket\s*\(/.test(text))
             hits.push({ file, line: i + 1, text });
         });
     }
@@ -68,6 +68,17 @@ describe('fetch inventory (R6-2 grep guard)', () => {
         true
       );
     }
+  });
+
+  it('the Node-only realtime socket is reachable only from the Node server entry', () => {
+    const importers = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))
+      .filter((f) =>
+        /from '[./]*(handlers\/)?realtimeHandlerNode'/.test(
+          readFileSync(f, 'utf8')
+        )
+      )
+      .map((f) => relative(ROOT, f).split('\\').join('/'));
+    expect(importers).toEqual(['src/start-server.ts']);
   });
 
   it('INVENTORY sites are unique, well-formed and tagged consistently', () => {
@@ -157,8 +168,9 @@ describe('routed sites run under the pins', () => {
     outOfLeaf,
   });
   const run = <T>(env: PinsEnvelope, fn: () => Promise<T>) =>
-    pinsState.run({ envelope: env, required: true, requestId: 'r' }, () =>
-      withLeafScope('config.targets[0]', fn)
+    pinsState.run(
+      { envelope: env, required: true, headerInvalid: false, requestId: 'r' },
+      () => withLeafScope('config.targets[0]', fn)
     );
 
   let fetchMock: jest.SpyInstance;

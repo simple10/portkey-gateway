@@ -7,7 +7,8 @@
  * - With no leaf scope, only `outOfLeaf` counts — never a union of the leaves' rows.
  * - A miss is `observe` (log + allow) when the governing mode is `observe`, else `deny`. In a leaf scope that is
  *   `envelope.mode[leafPath]` (missing ⇒ enforce); with no scope, `observe` only when every leaf observes.
- * - No valid envelope: `deny` when `EGRESS_PINS_REQUIRED`, else `allow` (upstream behaviour).
+ * - No envelope: `deny` when the header was present but invalid, or when `EGRESS_PINS_REQUIRED`; else (no header,
+ *   not required) `allow` — upstream behaviour.
  */
 import { destinationCovers, DestRow } from './destinations';
 import type { PinsEnvelope } from './egress-pins';
@@ -29,9 +30,9 @@ export function checkEgress(
   url: string,
   scope: LeafScope | undefined,
   envelope: PinsEnvelope | null,
-  opts: { required: boolean }
+  opts: { required: boolean; headerInvalid?: boolean }
 ): EgressDecision {
-  if (!envelope) return opts.required ? 'deny' : 'allow';
+  if (!envelope) return opts.required || opts.headerInvalid ? 'deny' : 'allow';
   const bySlug = scope
     ? envelope.fetches[`${scope.leafPath}|${scope.fetchKind}`]
     : undefined;

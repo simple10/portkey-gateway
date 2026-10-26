@@ -109,7 +109,7 @@ export type AllowEntry = {
   reason: string;
 };
 
-/** Calls of a function named `fetch` that are not upstream egress from this worker. */
+/** Calls of a function named `fetch` (or a `new WebSocket`) that are not upstream egress from this worker. */
 export const NON_UPSTREAM_ALLOW: readonly AllowEntry[] = [
   {
     path: 'src/amc/fetch-inventory.ts',
@@ -131,6 +131,12 @@ export const NON_UPSTREAM_ALLOW: readonly AllowEntry[] = [
     path: 'src/tests',
     reason:
       'test-suite helpers (src/tests/**) that call a locally running gateway; never bundled into the worker',
+  },
+  {
+    path: 'src/handlers/realtimeHandlerNode.ts',
+    match: 'new WebSocket(',
+    reason:
+      'Node-runtime realtime upgrade, wired only by src/start-server.ts (never in the workerd bundle Airship deploys); the guard pins that import',
   },
   {
     path: 'plugins/utils.ts',

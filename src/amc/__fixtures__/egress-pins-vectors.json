@@ -121,5 +121,287 @@
     "key": "amc-egress-pins-vector-key-1",
     "nonce": "nonce-0123456789abcdef",
     "mac": "4dx7iNh0oEt4-lETi_B7BrrJi9Ga339BkN2A5MpT1CQ"
-  }
+  },
+  "destinations": [
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/openai/chat/completions",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwAB/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctB/gwB/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/..;x/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%2e%2e;/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%2e%2e/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%252e%252e/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/x;y/z",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1//acctA/gwA/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA%2FgwA/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/a%2Fb",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%00",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/x?key=../../acctB",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acct%2Fa",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acct%2fa/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acct%2Fa",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acct/a/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com./v1/acctA/gwA/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://GATEWAY.ai.cloudflare.com:443/v1/acctA/gwA/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "http://gateway.ai.cloudflare.com/v1/acctA/gwA/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://gateway.ai.cloudflare.com:8443/v1/acctA/gwA/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://xn--bcher-kva.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://bücher.example/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://xn--bcher-kva.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://bucher.example/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://api.example",
+        "pathPrefix": "/b%C3%BCcher",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://api.example/bücher/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://api.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://api.example/../../etc",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://api.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://evil.example/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://legacy.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": true
+      },
+      "url": "https://legacy.example:8443/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://legacy.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": false
+      },
+      "url": "https://legacy.example:8443/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://legacy.example",
+        "pathPrefix": "",
+        "substitute": [],
+        "legacyAnyPort": true
+      },
+      "url": "http://legacy.example/x",
+      "covers": false
+    }
+  ]
 }
