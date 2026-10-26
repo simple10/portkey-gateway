@@ -7,7 +7,12 @@
 import { checkEgress } from './check';
 import { INVENTORY_BY_SITE } from './fetch-inventory';
 import { PINS_HEADER, REQUEST_ID_HEADER } from './egress-pins';
-import { currentPinsState, LeafScope, leafScope } from './scope';
+import {
+  currentPinsState,
+  LeafScope,
+  leafScope,
+  markHookEgressDenied,
+} from './scope';
 
 const MAX_REDIRECTS = 20;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
@@ -15,6 +20,8 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const CROSS_ORIGIN_STRIP = ['authorization', 'cookie', 'proxy-authorization'];
 
 function deniedResponse(): Response {
+  // Inside a guardrail/mutator check this refusal fails (and denies) the hook — see `hookCheckScope`.
+  markHookEgressDenied();
   return new Response(
     JSON.stringify({
       error: {

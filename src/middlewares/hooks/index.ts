@@ -14,6 +14,7 @@ import {
 import { plugins } from '../../../plugins';
 import { Context } from 'hono';
 import { HOOKS_EVENT_TYPE_PRESETS } from './globals';
+import { hookCheckScope, HookCheckScope } from '../../amc/scope';
 
 export class HookSpan {
   private context: HookSpanContext;
@@ -264,7 +265,9 @@ export class HooksManager {
       );
       const shouldDeny = results.some(
         (result, index) =>
-          !result.verdict && hooksToExecute[index].deny && !result.skipped
+          !result.verdict &&
+          (hooksToExecute[index].deny || result.deny) &&
+          !result.skipped
       );
 
       return { results, shouldDeny };
@@ -287,13 +290,27 @@ export class HooksManager {
   ): Promise<GuardrailCheckResult> {
     const [source, fn] = check.id.split('.');
     const createdAt = new Date();
+    // Airship (AMC): a fetch the egress pins refuse inside this check fails it, whatever the plugin reports.
+    const amc: HookCheckScope = { egressDenied: false };
+    const egressDenied = (): GuardrailCheckResult => ({
+      error: {
+        name: 'amc_egress_denied',
+        message:
+          'a fetch this check needs was refused by the egress pins (secret.destination_unbound)',
+      },
+      verdict: false,
+      data: null,
+      id: check.id,
+      execution_time: new Date().getTime() - createdAt.getTime(),
+      created_at: createdAt,
+      fail_on_error: true,
+      amc_egress_denied: true,
+    });
     try {
-      const result = await this.plugins[source][fn](
-        context,
-        check.parameters,
-        eventType,
-        options
+      const result = await hookCheckScope.run(amc, () =>
+        this.plugins[source][fn](context, check.parameters, eventType, options)
       );
+      if (amc.egressDenied) return egressDenied();
       return {
         transformedData: result.transformedData,
         data: result.data || null,
@@ -310,6 +327,7 @@ export class HooksManager {
           (check.parameters as Record<string, any>)?.failOnError || false,
       };
     } catch (err: any) {
+      if (amc.egressDenied) return egressDenied();
       console.error(`Error executing check "${check.id}":`, err);
       return {
         error: {
@@ -440,6 +458,12 @@ export class HooksManager {
       hookResult.deny = true;
     } else {
       hookResult.deny = false;
+    }
+
+    // Airship (AMC): a check whose fetch the egress pins refused is a failure that denies, never a pass.
+    if (checkResults.some((result) => result.amc_egress_denied)) {
+      hookResult.verdict = false;
+      hookResult.deny = true;
     }
 
     span.addHookResult(hook.eventType, hookResult);

@@ -24,6 +24,19 @@ export type PinsState = {
 export const leafScope = new AsyncLocalStorage<LeafScope | undefined>();
 export const pinsState = new AsyncLocalStorage<PinsState>();
 
+/**
+ * Set around each guardrail/mutator check (`HooksManager.executeFunction`): a fetch refused inside the check marks
+ * it, and the hook layer turns the check into a denying failure — a refused plugin fetch never counts as a pass.
+ */
+export type HookCheckScope = { egressDenied: boolean };
+export const hookCheckScope = new AsyncLocalStorage<HookCheckScope>();
+
+/** Mark the enclosing hook check (if any) as egress-denied. */
+export function markHookEgressDenied(): void {
+  const check = hookCheckScope.getStore();
+  if (check) check.egressDenied = true;
+}
+
 /** Portkey's target jsonPath (`config`, `config.targets[1]`) as llm's leaf path (`$`, `$.targets[1]`). */
 export function toLeafPath(jsonPath: string): string {
   return jsonPath.startsWith('config')

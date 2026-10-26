@@ -82,6 +82,8 @@ export interface GuardrailCheckResult {
   };
   log?: any;
   fail_on_error?: boolean;
+  /** Airship (AMC): a fetch inside this check was refused by the egress pins ⇒ the hook fails and denies. */
+  amc_egress_denied?: boolean;
 }
 
 export interface GuardrailResult {
