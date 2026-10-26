@@ -1,4 +1,5 @@
 import { HookEventType, PluginContext } from './types';
+import { amcFetch } from '../src/amc/fetch';
 
 interface PostOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -245,7 +246,7 @@ export async function post<T = any>(
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
 
-    const response: Response = await fetch(url, {
+    const response: Response = await amcFetch('plugins/utils.ts#post', url, {
       ...mergedOptions,
       signal: controller.signal,
     });

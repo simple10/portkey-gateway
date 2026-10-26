@@ -6,6 +6,7 @@ import type { PinsEnvelope } from './egress-pins';
 import { pinsState, withLeafScope } from './scope';
 import { retryRequest } from '../handlers/retryHandler';
 import { getAccessTokenFromEntraId } from '../providers/azure-openai/utils';
+import { post } from '../../plugins/utils';
 
 const ROOT = join(__dirname, '..', '..');
 const SCAN_DIRS = ['src', 'plugins'];
@@ -48,31 +49,6 @@ const allowed = (h: Hit) =>
 
 const fileOf = (site: string) => site.split('#')[0];
 
-/** Files whose sites are already routed through amcFetch (Task 40 batches). */
-const ROUTED_FILES = [
-  'src/handlers/retryHandler.ts',
-  'src/handlers/realtimeHandler.ts',
-  'src/providers/azure-openai/utils.ts',
-  'src/providers/bedrock/utils.ts',
-  'src/providers/google-vertex-ai/utils.ts',
-  'src/providers/azure-ai-inference/getBatchOutput.ts',
-  'src/providers/azure-openai/getBatchOutput.ts',
-  'src/providers/bedrock/getBatchOutput.ts',
-  'src/providers/bedrock/retrieveFile.ts',
-  'src/providers/bedrock/retrieveFileContent.ts',
-  'src/providers/bedrock/uploadFile.ts',
-  'src/providers/cohere/getBatchOutput.ts',
-  'src/providers/fireworks-ai/cancelFinetune.ts',
-  'src/providers/fireworks-ai/uploadFile.ts',
-  'src/providers/fireworks-ai/utils.ts',
-  'src/providers/google-vertex-ai/getBatchOutput.ts',
-  'src/providers/google-vertex-ai/retrieveFile.ts',
-  'src/providers/google-vertex-ai/uploadFile.ts',
-  'src/providers/openai/getBatchOutput.ts',
-  'src/handlers/modelsHandler.ts',
-];
-const routed = (file: string) => ROUTED_FILES.includes(file);
-
 describe('fetch inventory (R6-2 grep guard)', () => {
   const hits = bareFetchHits();
 
@@ -105,19 +81,8 @@ describe('fetch inventory (R6-2 grep guard)', () => {
     }
   });
 
-  it('every bare fetch( is either inventoried (not yet routed) or allowlisted', () => {
-    const perFile = new Map<string, number>();
-    for (const h of hits.filter((h) => !allowed(h)))
-      perFile.set(h.file, (perFile.get(h.file) ?? 0) + 1);
-    const inventoried = new Map<string, number>();
-    for (const e of INVENTORY.filter((e) => !routed(fileOf(e.site))))
-      inventoried.set(
-        fileOf(e.site),
-        (inventoried.get(fileOf(e.site)) ?? 0) + 1
-      );
-    expect(Object.fromEntries(perFile)).toEqual(
-      Object.fromEntries(inventoried)
-    );
+  it('no bare fetch( outside NON_UPSTREAM_ALLOW: every upstream call goes through amcFetch', () => {
+    expect(hits.filter((h) => !allowed(h))).toEqual([]);
   });
 
   it('each routed site calls amcFetch with its own literal site, exactly once, in its own file', () => {
@@ -127,7 +92,7 @@ describe('fetch inventory (R6-2 grep guard)', () => {
         sources.set(file, readFileSync(join(ROOT, file), 'utf8'));
       return sources.get(file)!;
     };
-    for (const e of INVENTORY.filter((e) => routed(fileOf(e.site)))) {
+    for (const e of INVENTORY) {
       const calls =
         read(fileOf(e.site)).split(
           new RegExp(
@@ -138,7 +103,6 @@ describe('fetch inventory (R6-2 grep guard)', () => {
     }
     // No literal names a site that is not inventoried.
     for (const file of new Set(INVENTORY.map((e) => fileOf(e.site)))) {
-      if (!routed(file)) continue;
       for (const m of read(file).matchAll(/amcFetch\(\s*'([^']+)'/g))
         expect(INVENTORY.some((e) => e.site === m[1])).toBe(true);
     }
@@ -276,6 +240,20 @@ describe('routed sites run under the pins', () => {
     await run(allowed, () =>
       amcFetch('src/handlers/modelsHandler.ts#controlPlane', url, {})
     );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a guardrail plugin call inside a target is out-of-leaf: the leaf pins never license it', async () => {
+    const guard = 'https://guard.example/v1/check';
+    const leafOnly = envelope({
+      '$.targets[0]|provider': { X: [row('https://guard.example')] },
+    });
+    await expect(run(leafOnly, () => post(guard, {}))).rejects.toThrow(
+      'HTTP error! status: 403'
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    const allowed = envelope(leafOnly.fetches, [row('https://guard.example')]);
+    await run(allowed, () => post(guard, {}));
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

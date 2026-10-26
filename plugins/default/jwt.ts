@@ -1,5 +1,6 @@
 import { PluginContext, PluginHandler, PluginParameters } from '../types';
 import { jwtVerify, importJWK, JWTHeaderParameters, JWK } from 'jose';
+import { amcFetch } from '../../src/amc/fetch';
 
 interface JWKSCacheOptions {
   maxAge: number; // seconds
@@ -23,7 +24,7 @@ async function fetchAndCacheJWKS(
   maxAge: number,
   putInCacheWithValue?: Function
 ) {
-  const res = await fetch(jwksUri);
+  const res = await amcFetch('plugins/default/jwt.ts#jwks', jwksUri);
   if (!res.ok) throw new Error(`Failed to fetch JWKS from ${jwksUri}`);
   const jwks = await res.json();
   await putInCacheWithValue?.(cacheKey, jwks, maxAge);

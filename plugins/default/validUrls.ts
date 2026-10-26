@@ -5,6 +5,7 @@ import {
   PluginParameters,
 } from '../types';
 import { getText } from '../utils';
+import { amcFetch } from '../../src/amc/fetch';
 
 export const handler: PluginHandler = async (
   context: PluginContext,
@@ -124,7 +125,7 @@ async function checkUrl(target: string): Promise<boolean> {
 
     // Race between the fetch and the timeout
     const response = await Promise.race([
-      fetch(target, {
+      amcFetch('plugins/default/validUrls.ts#head', target, {
         method: 'HEAD', // Use HEAD instead of GET for efficiency
         signal,
         headers: {
@@ -147,7 +148,8 @@ async function checkUrl(target: string): Promise<boolean> {
 async function checkDNS(target: string): Promise<boolean> {
   try {
     const parsedUrl = new URL(target);
-    const response = await fetch(
+    const response = await amcFetch(
+      'plugins/default/validUrls.ts#dnsQuery',
       // Using DNS over HTTPS (DoH) for cross-runtime compatibility (works in both Edge and Node.js)
       // https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/make-api-requests/
       `https://1.1.1.1/dns-query?name=${parsedUrl.hostname}`,

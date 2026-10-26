@@ -5,6 +5,7 @@ import {
   PluginParameters,
 } from '../types';
 import { getCurrentContentPart } from '../utils';
+import { amcFetch } from '../../src/amc/fetch';
 
 interface JavelinCredentials {
   apiKey: string;
@@ -64,11 +65,15 @@ async function callJavelinGuardrails(
 
   console.log('[Javelin] Request body:', JSON.stringify(requestBody));
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
+  const response = await amcFetch(
+    'plugins/javelin/guardrails.ts#guardrail',
+    apiUrl,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
+    }
+  );
 
   console.log('[Javelin] Response status:', response.status);
 

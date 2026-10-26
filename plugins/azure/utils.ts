@@ -1,4 +1,5 @@
 import { AzureCredentials } from './types';
+import { amcFetch } from '../../src/amc/fetch';
 
 const cacheExpiry = 15 * 60; // 15 minutes
 
@@ -29,7 +30,7 @@ export async function getAccessTokenFromEntraId(
       grant_type: 'client_credentials',
     });
 
-    const response = await fetch(url, {
+    const response = await amcFetch('plugins/azure/utils.ts#entraToken', url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -73,7 +74,8 @@ export async function getAzureManagedIdentityToken(
     return { token: cachedToken, error: null };
   }
   try {
-    const response = await fetch(
+    const response = await amcFetch(
+      'plugins/azure/utils.ts#managedIdentityToken',
       `http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${encodeURIComponent(resource)}${clientId ? `&client_id=${encodeURIComponent(clientId)}` : ''}`,
       {
         method: 'GET',

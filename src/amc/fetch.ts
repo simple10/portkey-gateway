@@ -98,13 +98,10 @@ export async function pinnedFetch(
     if (decision === 'deny') return deniedResponse();
 
     const res = await fetch(current, hopInit);
-    const location = res.headers.get('location');
-    if (
-      callerHandlesRedirects ||
-      !REDIRECT_STATUSES.has(res.status) ||
-      !location
-    )
+    if (callerHandlesRedirects || !REDIRECT_STATUSES.has(res.status))
       return res;
+    const location = res.headers.get('location');
+    if (!location) return res;
 
     const next = new URL(location, current);
     const method = (hopInit.method ?? 'GET').toUpperCase();

@@ -2,6 +2,7 @@ import { Sha256 } from '@aws-crypto/sha256-js';
 import { SignatureV4 } from '@smithy/signature-v4';
 import { BedrockBody, BedrockResponse, PIIFilter } from './type';
 import { post } from '../utils';
+import { amcFetch } from '../../src/amc/fetch';
 
 export const generateAWSHeaders = async (
   body: Record<string, any>,
@@ -214,7 +215,7 @@ export async function getAssumedRoleCredentials(
 
   let credentials: any;
   try {
-    const response = await fetch(url, {
+    const response = await amcFetch('plugins/bedrock/util.ts#guardrail', url, {
       method: 'GET',
       headers: headers,
     });
