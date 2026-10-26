@@ -12,7 +12,6 @@ export type DestRow = {
   origin: string;
   pathPrefix: string;
   substitute: string[];
-  legacyAnyPort: boolean;
 };
 
 /** Max percent-decoding passes (double/triple encoding; bounded so crafted input can't loop). */
@@ -81,7 +80,7 @@ export function destPathMatches(prefix: string, url: string): boolean {
   return !got.some(unsafeSegment);
 }
 
-/** True when `row` covers `url`: the exact origin (any port when `legacyAnyPort`) and {@link destPathMatches}.
+/** True when `row` covers `url`: the exact origin (port included) and {@link destPathMatches}.
  *  A request host with a trailing dot (`https://h.example./`) is deliberately NOT covered (fail closed). */
 export function destinationCovers(row: DestRow, url: string): boolean {
   let u: URL;
@@ -92,8 +91,5 @@ export function destinationCovers(row: DestRow, url: string): boolean {
   } catch {
     return false;
   }
-  const originOk = row.legacyAnyPort
-    ? u.protocol === o.protocol && u.hostname === o.hostname
-    : u.origin === o.origin;
-  return originOk && destPathMatches(row.pathPrefix, url);
+  return u.origin === o.origin && destPathMatches(row.pathPrefix, url);
 }

@@ -42,9 +42,8 @@ function deniedResponse(): Response {
   );
 }
 
-/** One structured record per refused/observed hop. Never the query (it can carry `?key=`), never a header. */
+/** One structured record per refused hop. Never the query (it can carry `?key=`), never a header. */
 function logUnbound(
-  decision: 'deny' | 'observe',
   url: string,
   scope: LeafScope | undefined,
   requestId: string,
@@ -62,7 +61,7 @@ function logUnbound(
   console.warn(
     JSON.stringify({
       message: 'secret.destination_unbound',
-      decision,
+      decision: 'deny',
       requestId,
       site: site ?? null,
       leafPath: scope?.leafPath ?? null,
@@ -100,9 +99,10 @@ export async function pinnedFetch(
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const decision = checkEgress(current, scope, state.envelope, state);
-    if (decision !== 'allow')
-      logUnbound(decision, current, scope, state.requestId, site);
-    if (decision === 'deny') return deniedResponse();
+    if (decision === 'deny') {
+      logUnbound(current, scope, state.requestId, site);
+      return deniedResponse();
+    }
 
     const res = await fetch(current, hopInit);
     if (callerHandlesRedirects || !REDIRECT_STATUSES.has(res.status))
@@ -144,13 +144,7 @@ export async function amcFetch(
   const entry = INVENTORY_BY_SITE.get(site);
   const ambient = leafScope.getStore();
   if (!entry) {
-    logUnbound(
-      'deny',
-      String(url),
-      ambient,
-      currentPinsState().requestId,
-      site
-    );
+    logUnbound(String(url), ambient, currentPinsState().requestId, site);
     return deniedResponse();
   }
   let scope: LeafScope | undefined;

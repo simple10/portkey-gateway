@@ -5,8 +5,7 @@
  *   EVERY slug has at least one row covering the final URL (all-of per fetch: one slug's destinations never license
  *   another slug's egress). A leaf fetch with no entry carries no pins and falls back to `outOfLeaf`.
  * - With no leaf scope, only `outOfLeaf` counts — never a union of the leaves' rows.
- * - A miss is `observe` (log + allow) when the governing mode is `observe`, else `deny`. In a leaf scope that is
- *   `envelope.mode[leafPath]` (missing ⇒ enforce); with no scope, `observe` only when every leaf observes.
+ * - A miss is `deny`: every leaf is enforced.
  * - No envelope: `deny` when the header was present but invalid, or when `EGRESS_PINS_REQUIRED`; else (no header,
  *   not required) `allow` — upstream behaviour.
  */
@@ -14,17 +13,10 @@ import { destinationCovers, DestRow } from './destinations';
 import type { PinsEnvelope } from './egress-pins';
 import type { LeafScope } from './scope';
 
-export type EgressDecision = 'allow' | 'deny' | 'observe';
+export type EgressDecision = 'allow' | 'deny';
 
 const coveredBy = (rows: DestRow[], url: string) =>
   rows.some((r) => destinationCovers(r, url));
-
-function outOfLeafMode(envelope: PinsEnvelope): 'enforce' | 'observe' {
-  const modes = Object.values(envelope.mode);
-  return modes.length > 0 && modes.every((m) => m === 'observe')
-    ? 'observe'
-    : 'enforce';
-}
 
 export function checkEgress(
   url: string,
@@ -39,9 +31,5 @@ export function checkEgress(
   const covered = bySlug
     ? Object.values(bySlug).every((rows) => coveredBy(rows, url))
     : coveredBy(envelope.outOfLeaf, url);
-  if (covered) return 'allow';
-  const mode = scope
-    ? envelope.mode[scope.leafPath] ?? 'enforce'
-    : outOfLeafMode(envelope);
-  return mode === 'observe' ? 'observe' : 'deny';
+  return covered ? 'allow' : 'deny';
 }

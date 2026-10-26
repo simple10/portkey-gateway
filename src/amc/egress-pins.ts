@@ -31,8 +31,6 @@ export type PinsEnvelope = {
   requestId: string;
   /** Epoch ms, ≤ now + 60 s. */
   exp: number;
-  /** Per leaf path: llm's `enforce-new` decision for that leaf. */
-  mode: Record<string, 'enforce' | 'observe'>;
   /** `${leafPath}|${fetchKind}` ⇒ slug ⇒ that slug's own covering rows (all-of across slugs). */
   fetches: Record<string, Record<string, DestRow[]>>;
   /** Hosts that receive no swapped credential (plugin/guardrail hosts, the models endpoint). */
@@ -116,26 +114,20 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
 function isDestRow(v: unknown): v is DestRow {
   return (
     isObj(v) &&
-    Object.keys(v).length === 4 &&
+    Object.keys(v).length === 3 &&
     typeof v.origin === 'string' &&
     typeof v.pathPrefix === 'string' &&
-    typeof v.legacyAnyPort === 'boolean' &&
     Array.isArray(v.substitute) &&
     v.substitute.every((s) => typeof s === 'string')
   );
 }
 
 function isEnvelope(v: unknown): v is PinsEnvelope {
-  if (!isObj(v) || Object.keys(v).length !== 7 || v.v !== 1) return false;
+  if (!isObj(v) || Object.keys(v).length !== 6 || v.v !== 1) return false;
   if (
     typeof v.configHash !== 'string' ||
     typeof v.requestId !== 'string' ||
     typeof v.exp !== 'number'
-  )
-    return false;
-  if (
-    !isObj(v.mode) ||
-    !Object.values(v.mode).every((m) => m === 'enforce' || m === 'observe')
   )
     return false;
   if (!Array.isArray(v.outOfLeaf) || !v.outOfLeaf.every(isDestRow))

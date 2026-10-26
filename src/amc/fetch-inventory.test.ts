@@ -153,7 +153,6 @@ describe('routed sites run under the pins', () => {
     origin,
     pathPrefix,
     substitute: [],
-    legacyAnyPort: false,
   });
   const envelope = (
     fetches: PinsEnvelope['fetches'],
@@ -163,7 +162,6 @@ describe('routed sites run under the pins', () => {
     configHash: 'h',
     requestId: 'r',
     exp: Date.now() + 30_000,
-    mode: { '$.targets[0]': 'enforce' },
     fetches,
     outOfLeaf,
   });

@@ -19,7 +19,6 @@ const row = (origin: string, pathPrefix = ''): DestRow => ({
   origin,
   pathPrefix,
   substitute: [],
-  legacyAnyPort: false,
 });
 
 const CF = 'https://gateway.ai.cloudflare.com';
@@ -32,7 +31,6 @@ const envelope = (over: Partial<PinsEnvelope> = {}): PinsEnvelope => ({
   configHash: 'h',
   requestId: 'r',
   exp: Date.now() + 30_000,
-  mode: { '$.targets[0]': 'enforce' },
   fetches: {},
   outOfLeaf: [],
   ...over,
@@ -217,16 +215,6 @@ describe('checkEgress — per-fetch all-of', () => {
     ).toBe('deny');
   });
 
-  it('observe mode reports observe instead of deny', () => {
-    const env = envelope({
-      mode: { '$.targets[0]': 'observe' },
-      fetches: { '$.targets[0]|provider': { X: [acctA] } },
-    });
-    expect(
-      checkEgress(`${CF}/v1/acctB/gwB/x`, provider, env, { required: false })
-    ).toBe('observe');
-  });
-
   it('no envelope: allowed unless EGRESS_PINS_REQUIRED', () => {
     expect(checkEgress(`${CF}/x`, provider, null, { required: false })).toBe(
       'allow'
@@ -260,7 +248,7 @@ describe('scope', () => {
   });
 });
 
-describe('pinnedFetch — modes and redirects', () => {
+describe('pinnedFetch — refusals and redirects', () => {
   const state = (env: PinsEnvelope | null, required = false) => ({
     envelope: env,
     required,
@@ -281,15 +269,14 @@ describe('pinnedFetch — modes and redirects', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('observe: logs secret.destination_unbound and allows', async () => {
-    const env = { ...pinned, mode: { '$.targets[0]': 'observe' as const } };
-    const res = await pinsState.run(state(env), () =>
+  it('a refused hop logs secret.destination_unbound without the query', async () => {
+    const res = await pinsState.run(state(pinned), () =>
       leafScope.run(provider, () =>
         pinnedFetch(`${CF}/v1/acctB/gwB/x?key=SECRET`, {}, leafScope.getStore())
       )
     );
-    expect(res.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
     const logged = JSON.stringify(warnMock.mock.calls);
     expect(logged).toContain('secret.destination_unbound');
     expect(logged).not.toContain('SECRET');
