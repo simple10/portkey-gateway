@@ -38,6 +38,7 @@ import { ProviderContext } from './services/providerContext';
 import { RequestContext } from './services/requestContext';
 import { ResponseService } from './services/responseService';
 import { withLeafScope } from '../amc/scope';
+import { leafIndexOf, stampLeafIndexes } from '../amc/leaf-index';
 
 function constructRequestBody(
   requestContext: RequestContext,
@@ -644,6 +645,10 @@ export async function tryTargetsRecursively(
   ];
   // end: merge inherited config with current target config (preference given to current)
 
+  // Airship (AMC): stamp each child's real position; leaf paths (the egress-pins key) come only from this stamp.
+  if (Array.isArray(currentTarget.targets))
+    currentTarget.targets = stampLeafIndexes(currentTarget.targets);
+
   const isHandlingCircuitBreaker = currentInheritedConfig.id;
   if (isHandlingCircuitBreaker) {
     const healthyTargets = (currentTarget.targets || [])
@@ -662,8 +667,7 @@ export async function tryTargetsRecursively(
 
   switch (strategyMode) {
     case StrategyModes.FALLBACK:
-      for (const [index, target] of currentTarget.targets.entries()) {
-        const originalIndex = target.originalIndex || index;
+      for (const target of currentTarget.targets) {
         response = await tryTargetsRecursively(
           c,
           target,
@@ -671,7 +675,7 @@ export async function tryTargetsRecursively(
           requestHeaders,
           fn,
           method,
-          `${currentJsonPath}.targets[${originalIndex}]`,
+          `${currentJsonPath}.targets[${leafIndexOf(target)}]`,
           currentInheritedConfig
         );
         const codes = currentTarget.strategy?.onStatusCodes;
@@ -703,10 +707,10 @@ export async function tryTargetsRecursively(
       );
 
       let randomWeight = Math.random() * totalWeight;
-      for (const [index, provider] of currentTarget.targets.entries()) {
-        const originalIndex = provider.originalIndex || index;
+      for (const provider of currentTarget.targets) {
         if (randomWeight < provider.weight) {
-          currentJsonPath = currentJsonPath + `.targets[${originalIndex}]`;
+          currentJsonPath =
+            currentJsonPath + `.targets[${leafIndexOf(provider)}]`;
           response = await tryTargetsRecursively(
             c,
             provider,
@@ -751,7 +755,6 @@ export async function tryTargetsRecursively(
         throw new RouterError(conditionalRouter.message);
       }
 
-      const originalIndex = finalTarget.originalIndex || finalTarget.index;
       response = await tryTargetsRecursively(
         c,
         finalTarget,
@@ -759,14 +762,13 @@ export async function tryTargetsRecursively(
         requestHeaders,
         fn,
         method,
-        `${currentJsonPath}.targets[${originalIndex}]`,
+        `${currentJsonPath}.targets[${leafIndexOf(finalTarget)}]`,
         currentInheritedConfig
       );
       break;
     }
 
     case StrategyModes.SINGLE:
-      const originalIndex = currentTarget.targets[0].originalIndex || 0;
       response = await tryTargetsRecursively(
         c,
         currentTarget.targets[0],
@@ -774,7 +776,7 @@ export async function tryTargetsRecursively(
         requestHeaders,
         fn,
         method,
-        `${currentJsonPath}.targets[${originalIndex}]`,
+        `${currentJsonPath}.targets[${leafIndexOf(currentTarget.targets[0])}]`,
         currentInheritedConfig
       );
       break;
