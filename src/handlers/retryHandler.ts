@@ -1,5 +1,6 @@
 import retry from 'async-retry';
 import { MAX_RETRY_LIMIT_MS, POSSIBLE_RETRY_STATUS_HEADERS } from '../globals';
+import { amcFetch } from '../amc/fetch';
 
 async function fetchWithTimeout(
   url: string,
@@ -20,7 +21,11 @@ async function fetchWithTimeout(
     if (requestHandler) {
       response = await requestHandler();
     } else {
-      response = await fetch(url, timeoutRequestOptions);
+      response = await amcFetch(
+        'src/handlers/retryHandler.ts#fetchWithTimeout',
+        url,
+        timeoutRequestOptions
+      );
     }
     clearTimeout(timeoutId);
   } catch (err: any) {
@@ -85,7 +90,7 @@ export const retryRequest = async (
 
   try {
     await retry(
-      async (bail: any, attempt: number, rateLimiter: any) => {
+      async (bail: any, attempt: number, rateLimiter?: any) => {
         try {
           let response: Response;
           if (timeout) {
@@ -98,7 +103,11 @@ export const retryRequest = async (
           } else if (requestHandler) {
             response = await requestHandler();
           } else {
-            response = await fetch(url, options);
+            response = await amcFetch(
+              'src/handlers/retryHandler.ts#retryRequest',
+              url,
+              options
+            );
           }
           if (statusCodesToRetry.includes(response.status)) {
             const errorObj: any = new Error(await response.text());

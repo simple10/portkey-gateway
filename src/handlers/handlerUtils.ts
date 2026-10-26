@@ -37,6 +37,7 @@ import { PreRequestValidatorService } from './services/preRequestValidatorServic
 import { ProviderContext } from './services/providerContext';
 import { RequestContext } from './services/requestContext';
 import { ResponseService } from './services/responseService';
+import { withLeafScope } from '../amc/scope';
 
 function constructRequestBody(
   requestContext: RequestContext,
@@ -780,14 +781,17 @@ export async function tryTargetsRecursively(
 
     default:
       try {
-        response = await tryPost(
-          c,
-          currentTarget,
-          request,
-          requestHeaders,
-          fn,
-          currentJsonPath,
-          method
+        // Airship (AMC): this target's upstream fetches are checked against its own egress pins.
+        response = await withLeafScope(currentJsonPath, () =>
+          tryPost(
+            c,
+            currentTarget,
+            request,
+            requestHeaders,
+            fn,
+            currentJsonPath,
+            method
+          )
         );
         if (isHandlingCircuitBreaker) {
           await c.get('handleCircuitBreakerResponse')?.(

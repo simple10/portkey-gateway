@@ -9,11 +9,16 @@ import {
   getURLForOutgoingConnection,
 } from './websocketUtils';
 import { RealtimeLlmEventParser } from '../services/realtimeLlmEventParser';
+import { amcFetch } from '../amc/fetch';
 
 const getOutgoingWebSocket = async (url: string, options: RequestInit) => {
   let outgoingWebSocket: WebSocket | null = null;
   try {
-    let response = await fetch(url, options);
+    let response = await amcFetch(
+      'src/handlers/realtimeHandler.ts#websocketUpgrade',
+      url,
+      options
+    );
     outgoingWebSocket = response.webSocket;
   } catch (error) {
     console.error('getOutgoingWebSocket error: ', error);
