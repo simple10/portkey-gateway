@@ -1,9 +1,9 @@
 /**
  * Airship (AMC) egress pins — destination rows and URL coverage.
  *
- * A port of the matching half of airship `shared/src/secret-destinations.ts` (`decodeBounded`, `unsafeSegment`,
- * `destPathMatches`, `destinationCovers`; as of airship 8fdf41e4). The fork runs it on the FINAL, normalized URL of
- * every upstream fetch, so the semantics must stay identical to airship's static check: the `destinations` cases in
+ * A port of the matching half of airship `shared/src/secret-destinations.ts` (`decodeBounded`, `unsafeSegment` with
+ * its `%c0`/`%c1`/`%u` refusal, `destPathMatches`, `destinationCovers`). The fork runs it on the FINAL, normalized URL
+ * of every upstream fetch, so the semantics must stay identical to airship's static check: the `destinations` cases in
  * `__fixtures__/egress-pins-vectors.json` pin both implementations.
  */
 
@@ -42,9 +42,27 @@ function decodeBounded(text: string): { value: string; settled: boolean } {
   return { value: form, settled: decodeEscapesOnce(form) === form };
 }
 
-/** True when a raw path segment is, or hides, traversal or a control byte once fully decoded. A `;params` tail is
- *  stripped from each component first, so `..;x` (a servlet-style path parameter) is traversal. */
+/** An overlong-UTF-8 lead byte (`%c0`, `%c1`) or an IIS `%u` escape: a server that decodes them can turn `%c0%ae` or
+ *  `%u002e` into a dot, so a segment carrying one at any decoding depth is refused. */
+const EXOTIC_ESCAPE = /%(?:c0|c1|u)/i;
+
+/** True when `segment` carries {@link EXOTIC_ESCAPE} raw or after any bounded decoding pass. */
+function hidesExoticEscape(segment: string): boolean {
+  let form = segment;
+  for (let pass = 0; pass <= MAX_DECODE_PASSES; pass++) {
+    if (EXOTIC_ESCAPE.test(form)) return true;
+    const next = decodeEscapesOnce(form);
+    if (next === form) return false;
+    form = next;
+  }
+  return true;
+}
+
+/** True when a raw path segment is, or hides, traversal or a control byte once fully decoded, or an overlong-UTF-8 /
+ *  `%u` escape. A `;params` tail is stripped from each component first, so `..;x` (a servlet-style path parameter) is
+ *  traversal. */
 function unsafeSegment(segment: string): boolean {
+  if (hidesExoticEscape(segment)) return true;
   const { value: d, settled } = decodeBounded(segment);
   if (!settled) return true;
   // eslint-disable-next-line no-control-regex

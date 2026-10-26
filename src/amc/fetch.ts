@@ -15,6 +15,9 @@ import {
 } from './scope';
 
 const MAX_REDIRECTS = 20;
+/** Set only on the fork's own refusal ({@link deniedResponse}); stripped from every upstream response, so a hostile
+ *  upstream can't pass its error off as an egress denial. */
+const DENIED_HEADER = 'x-amc-egress-denied';
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 /** Dropped on a cross-origin hop, as the Fetch standard does. */
 const CROSS_ORIGIN_STRIP = ['authorization', 'cookie', 'proxy-authorization'];
@@ -36,7 +39,7 @@ function deniedResponse(): Response {
       status: 403,
       headers: {
         'content-type': 'application/json',
-        'x-amc-egress-denied': '1',
+        [DENIED_HEADER]: '1',
       },
     }
   );
@@ -72,6 +75,18 @@ function logUnbound(
   );
 }
 
+/** The upstream response without a {@link DENIED_HEADER} it may carry (fetch responses have immutable headers). */
+function withoutDeniedHeader(res: Response): Response {
+  if (!res.headers.has(DENIED_HEADER)) return res;
+  const headers = new Headers(res.headers);
+  headers.delete(DENIED_HEADER);
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
+
 /** A body that can be sent twice (a 307/308 hop re-sends it); a stream cannot. */
 function replayable(body: RequestInit['body']): boolean {
   return body == null || !(body instanceof ReadableStream);
@@ -79,7 +94,7 @@ function replayable(body: RequestInit['body']): boolean {
 
 /**
  * Fetch `url` under the current pins state and `scope` (`undefined` = no leaf: only `outOfLeaf` counts). A refused hop returns a
- * 403 `amc_egress_denied` response instead of fetching. A caller that asked for `redirect:'manual'`/`'error'` gets
+ * 403 `amc_egress_denied` response instead of fetching; an upstream response never carries `x-amc-egress-denied`. A caller that asked for `redirect:'manual'`/`'error'` gets
  * the raw 3xx back (its own follow-up fetch goes through this wrapper again).
  */
 export async function pinnedFetch(
@@ -104,7 +119,7 @@ export async function pinnedFetch(
       return deniedResponse();
     }
 
-    const res = await fetch(current, hopInit);
+    const res = withoutDeniedHeader(await fetch(current, hopInit));
     if (callerHandlesRedirects || !REDIRECT_STATUSES.has(res.status))
       return res;
     const location = res.headers.get('location');

@@ -282,6 +282,32 @@ describe('pinnedFetch — refusals and redirects', () => {
     expect(logged).not.toContain('SECRET');
   });
 
+  it('an upstream x-amc-egress-denied header is stripped — only the fork itself sets it', async () => {
+    fetchMock.mockImplementationOnce(
+      async () =>
+        new Response('{"error":"llm.secret_destination_denied"}', {
+          status: 403,
+          headers: { 'x-amc-egress-denied': '1', 'x-other': 'kept' },
+        })
+    );
+    const res = await pinsState.run(state(pinned), () =>
+      leafScope.run(provider, () =>
+        pinnedFetch(`${CF}/v1/acctA/gwA/x`, {}, leafScope.getStore())
+      )
+    );
+    expect(res.status).toBe(403);
+    expect(res.headers.get('x-amc-egress-denied')).toBeNull();
+    expect(res.headers.get('x-other')).toBe('kept');
+    expect(await res.text()).toContain('llm.secret_destination_denied');
+    // The fork's own refusal still carries it.
+    const own = await pinsState.run(state(pinned), () =>
+      leafScope.run(provider, () =>
+        pinnedFetch(`${CF}/v1/acctB/gwB/x`, {}, leafScope.getStore())
+      )
+    );
+    expect(own.headers.get('x-amc-egress-denied')).toBe('1');
+  });
+
   it('EGRESS_PINS_REQUIRED with no header refuses every fetch', async () => {
     const res = await pinsState.run(state(null, true), () =>
       pinnedFetch('https://api.openai.com/v1/chat', {}, leafScope.getStore())

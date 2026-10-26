@@ -230,6 +230,60 @@
         "pathPrefix": "/v1/acctA/gwA",
         "substitute": []
       },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%c0%ae%c0%ae/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%C1%9C/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%u002e%u002e/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%U002E/x",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%25c0%25ae/acctB",
+      "covers": false
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
+      "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/%75ser/x",
+      "covers": true
+    },
+    {
+      "row": {
+        "origin": "https://gateway.ai.cloudflare.com",
+        "pathPrefix": "/v1/acctA/gwA",
+        "substitute": []
+      },
       "url": "https://gateway.ai.cloudflare.com/v1/acctA/gwA/x?key=../../acctB",
       "covers": true
     },
