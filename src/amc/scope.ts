@@ -39,7 +39,7 @@ export function withLeafScope<T>(jsonPath: string, fn: () => T): T {
 
 /**
  * Once any request in this isolate ran with `EGRESS_PINS_REQUIRED=1`, a fetch that somehow runs outside a request
- * scope is refused too (fail closed); before that, a scope-less fetch (tests, tooling) keeps upstream behaviour.
+ * scope is refused too (fail closed); before that, a scope-less fetch — tests, tooling — keeps upstream behaviour.
  */
 let requiredLatched = false;
 export function latchRequired(): void {

@@ -5,6 +5,7 @@
  * redirect hop: redirects are always fetched with `redirect:'manual'` and followed here, one checked hop at a time.
  */
 import { checkEgress } from './check';
+import { INVENTORY_BY_SITE } from './fetch-inventory';
 import { PINS_HEADER, REQUEST_ID_HEADER } from './egress-pins';
 import { currentPinsState, LeafScope, leafScope } from './scope';
 
@@ -125,4 +126,32 @@ export async function pinnedFetch(
     current = next.href;
   }
   throw new TypeError('amc egress: too many redirects');
+}
+
+/**
+ * The only way upstream code may fetch: `site` must be tagged in the inventory (an untagged site is refused). The
+ * site's kind picks the scope the final URL is checked under — see `fetch-inventory.ts`.
+ */
+export async function amcFetch(
+  site: string,
+  url: string | URL,
+  init: RequestInit = {}
+): Promise<Response> {
+  const entry = INVENTORY_BY_SITE.get(site);
+  const ambient = leafScope.getStore();
+  if (!entry) {
+    logUnbound(
+      'deny',
+      String(url),
+      ambient,
+      currentPinsState().requestId,
+      site
+    );
+    return deniedResponse();
+  }
+  let scope: LeafScope | undefined;
+  if (entry.kind === 'leaf') scope = ambient;
+  else if (entry.kind === 'credential-field' && ambient)
+    scope = { leafPath: ambient.leafPath, fetchKind: entry.fetchKind! };
+  return pinnedFetch(url, init, scope, site);
 }
