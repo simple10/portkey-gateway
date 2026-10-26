@@ -538,7 +538,7 @@ describe('request middleware', () => {
       requestId: 'req-1',
       fetches: { '$.targets[0]|provider': { X: [acctA] } },
     });
-    for (const header of [await signPins(env, KEY), 'garbage']) {
+    for (const header of [await signPins(env, KEY), 'garbage', '']) {
       const res = await call(
         { 'x-amc-egress-pins': header, 'x-amc-request-id': 'req-1' },
         '0'

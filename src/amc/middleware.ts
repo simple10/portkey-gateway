@@ -27,6 +27,8 @@ export async function amcEgressPins(c: Context, next: Next) {
   const key = amcVar(c, 'EGRESS_PINS_HMAC_KEY');
   const header = c.req.header(PINS_HEADER);
   const requestId = c.req.header(REQUEST_ID_HEADER) ?? '';
+  // Present means present: an empty `x-amc-egress-pins:` is an invalid header, not an absent one.
+  const headerPresent = header !== undefined && header !== null;
   const envelope =
     header && key
       ? await verifyPins(
@@ -37,7 +39,7 @@ export async function amcEgressPins(c: Context, next: Next) {
           requestId
         )
       : null;
-  if (header && !envelope)
+  if (headerPresent && !envelope)
     console.warn(
       JSON.stringify({
         message: 'egress_pins.invalid',
@@ -46,7 +48,7 @@ export async function amcEgressPins(c: Context, next: Next) {
         required,
       })
     );
-  const headerInvalid = !!header && !envelope;
+  const headerInvalid = headerPresent && !envelope;
   return pinsState.run({ envelope, required, headerInvalid, requestId }, () =>
     next()
   );
