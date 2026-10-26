@@ -4,6 +4,7 @@ import { Options } from '../../types/requestBody';
 import { RetrieveBatchResponse } from '../types';
 import { AZURE_OPEN_AI } from '../../globals';
 import { generateErrorResponse } from '../utils';
+import { amcFetch } from '../../amc/fetch';
 
 // Return a ReadableStream containing batches output data
 export const AzureOpenAIGetBatchOutputRequestHandler = async ({
@@ -43,10 +44,14 @@ export const AzureOpenAIGetBatchOutputRequestHandler = async ({
     transformedRequestUrl: retrieveBatchURL,
     gatewayRequestBody: {},
   });
-  const retrieveBatchesResponse = await fetch(retrieveBatchURL, {
-    method: 'GET',
-    headers: retrieveBatchesHeaders,
-  });
+  const retrieveBatchesResponse = await amcFetch(
+    'src/providers/azure-openai/getBatchOutput.ts#retrieveBatch',
+    retrieveBatchURL,
+    {
+      method: 'GET',
+      headers: retrieveBatchesHeaders,
+    }
+  );
 
   const batchDetails: RetrieveBatchResponse =
     await retrieveBatchesResponse.json();
@@ -93,10 +98,14 @@ export const AzureOpenAIGetBatchOutputRequestHandler = async ({
       transformedRequestUrl: retrieveFileContentURL,
       gatewayRequestBody: {},
     });
-    response = fetch(retrieveFileContentURL, {
-      method: 'GET',
-      headers: retrieveFileContentHeaders,
-    });
+    response = amcFetch(
+      'src/providers/azure-openai/getBatchOutput.ts#fileContent',
+      retrieveFileContentURL,
+      {
+        method: 'GET',
+        headers: retrieveFileContentHeaders,
+      }
+    );
   }
   if (outputBlob) {
     const retrieveBlobHeaders = await AzureOpenAIAPIConfig.headers({
@@ -110,14 +119,18 @@ export const AzureOpenAIGetBatchOutputRequestHandler = async ({
       transformedRequestUrl: outputBlob,
       gatewayRequestBody: {},
     });
-    response = fetch(outputBlob, {
-      method: 'GET',
-      headers: {
-        ...retrieveBlobHeaders,
-        'x-ms-date': new Date().toUTCString(),
-        'x-ms-version': '2022-11-02',
-      },
-    });
+    response = amcFetch(
+      'src/providers/azure-openai/getBatchOutput.ts#outputBlob',
+      outputBlob,
+      {
+        method: 'GET',
+        headers: {
+          ...retrieveBlobHeaders,
+          'x-ms-date': new Date().toUTCString(),
+          'x-ms-version': '2022-11-02',
+        },
+      }
+    );
   }
   const responseData = await response;
   if (!responseData || !responseData.ok) {

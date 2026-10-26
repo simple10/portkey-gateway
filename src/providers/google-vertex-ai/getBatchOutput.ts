@@ -11,6 +11,7 @@ import { BatchEndpoints, GOOGLE_VERTEX_AI } from '../../globals';
 import { createLineSplitter } from '../../handlers/streamHandlerUtils';
 import GoogleApiConfig from './api';
 import { GoogleEmbedResponseTransform } from './embed';
+import { amcFetch } from '../../amc/fetch';
 
 const responseTransforms = {
   google: {
@@ -128,7 +129,11 @@ export const BatchOutputRequestHandler: RequestHandler = async ({
   let modelName = '';
   let outputURL;
   try {
-    const response = await fetch(batchesURL, options);
+    const response = await amcFetch(
+      'src/providers/google-vertex-ai/getBatchOutput.ts#batch',
+      batchesURL,
+      options
+    );
     if (!response.ok) {
       const error = await response.text();
       throw new Error(error);
@@ -174,7 +179,8 @@ export const BatchOutputRequestHandler: RequestHandler = async ({
       ? '000000000000.jsonl'
       : 'predictions.jsonl';
 
-  const outputResponse = await fetch(
+  const outputResponse = await amcFetch(
+    'src/providers/google-vertex-ai/getBatchOutput.ts#output',
     `${outputURL}/${predictionFileId}`,
     options
   );

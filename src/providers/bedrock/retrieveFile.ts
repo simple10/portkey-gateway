@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { Options } from '../../types/requestBody';
 import BedrockAPIConfig from './api';
 import { BEDROCK } from '../../globals';
+import { amcFetch } from '../../amc/fetch';
 
 export const BedrockRetrieveFileRequestHandler = async ({
   c,
@@ -39,10 +40,14 @@ export const BedrockRetrieveFileRequestHandler = async ({
     });
 
     // make the request
-    const response = await fetch(retrieveFileURL, {
-      method: 'GET',
-      headers,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/retrieveFile.ts#retrieveFile',
+      retrieveFileURL,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

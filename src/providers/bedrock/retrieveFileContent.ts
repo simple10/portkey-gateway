@@ -3,6 +3,7 @@ import { Options } from '../../types/requestBody';
 import BedrockAPIConfig from './api';
 import { getOctetStreamToOctetStreamTransformer } from '../../handlers/streamHandlerUtils';
 import { BEDROCK } from '../../globals';
+import { amcFetch } from '../../amc/fetch';
 
 const getRowTransform = () => {
   return (row: Record<string, any>) => row;
@@ -45,10 +46,14 @@ export const BedrockRetrieveFileContentRequestHandler = async ({
     });
 
     // make the request
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/retrieveFileContent.ts#retrieveFileContent',
+      url,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

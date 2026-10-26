@@ -14,6 +14,7 @@ import {
 import BedrockAPIConfig from './api';
 import { ProviderConfig, RequestHandler } from '../../providers/types';
 import { Options } from '../../types/requestBody';
+import { amcFetch } from '../../amc/fetch';
 
 class AwsMultipartUploadHandler {
   private bucket: string;
@@ -54,7 +55,11 @@ class AwsMultipartUploadHandler {
     });
 
     // Step 5: Send Request
-    const response = await fetch(this.url.toString(), { method, headers });
+    const response = await amcFetch(
+      'src/providers/bedrock/uploadFile.ts#createMultipartUpload',
+      this.url.toString(),
+      { method, headers }
+    );
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
@@ -180,11 +185,15 @@ class AwsMultipartUploadHandler {
       transformedRequestUrl: partUrl.toString(),
     });
 
-    const response = await fetch(partUrl.toString(), {
-      method,
-      headers,
-      body: partData,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/uploadFile.ts#uploadPart',
+      partUrl.toString(),
+      {
+        method,
+        headers,
+        body: partData,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -226,11 +235,15 @@ class AwsMultipartUploadHandler {
       transformedRequestUrl: completeUrl.toString(),
     });
 
-    const response = await fetch(completeUrl.toString(), {
-      method,
-      headers,
-      body: payload,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/uploadFile.ts#completeMultipartUpload',
+      completeUrl.toString(),
+      {
+        method,
+        headers,
+        body: payload,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

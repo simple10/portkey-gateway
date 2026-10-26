@@ -55,6 +55,21 @@ const ROUTED_FILES = [
   'src/providers/azure-openai/utils.ts',
   'src/providers/bedrock/utils.ts',
   'src/providers/google-vertex-ai/utils.ts',
+  'src/providers/azure-ai-inference/getBatchOutput.ts',
+  'src/providers/azure-openai/getBatchOutput.ts',
+  'src/providers/bedrock/getBatchOutput.ts',
+  'src/providers/bedrock/retrieveFile.ts',
+  'src/providers/bedrock/retrieveFileContent.ts',
+  'src/providers/bedrock/uploadFile.ts',
+  'src/providers/cohere/getBatchOutput.ts',
+  'src/providers/fireworks-ai/cancelFinetune.ts',
+  'src/providers/fireworks-ai/uploadFile.ts',
+  'src/providers/fireworks-ai/utils.ts',
+  'src/providers/google-vertex-ai/getBatchOutput.ts',
+  'src/providers/google-vertex-ai/retrieveFile.ts',
+  'src/providers/google-vertex-ai/uploadFile.ts',
+  'src/providers/openai/getBatchOutput.ts',
+  'src/handlers/modelsHandler.ts',
 ];
 const routed = (file: string) => ROUTED_FILES.includes(file);
 
@@ -62,7 +77,12 @@ describe('fetch inventory (R6-2 grep guard)', () => {
   const hits = bareFetchHits();
 
   it('finds the known upstream surface (sanity: the scan works)', () => {
-    expect(hits.length).toBeGreaterThan(40);
+    const routedCalls = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d))).reduce(
+      (n, f) =>
+        n + (readFileSync(f, 'utf8').match(/amcFetch\(\s*'/g) ?? []).length,
+      0
+    );
+    expect(hits.length + routedCalls).toBeGreaterThan(50);
   });
 
   it('every NON_UPSTREAM_ALLOW entry has a reason and still matches something', () => {
@@ -237,6 +257,25 @@ describe('routed sites run under the pins', () => {
         getAccessTokenFromEntraId('tenant-1', 'id', 's')
       )
     ).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('an out-of-leaf site ignores the ambient leaf pins: only outOfLeaf counts', async () => {
+    const url = 'https://control.example/v2/models';
+    const leafOnly = envelope({
+      '$.targets[0]|provider': { X: [row('https://control.example')] },
+    });
+    const res = await run(leafOnly, () =>
+      amcFetch('src/handlers/modelsHandler.ts#controlPlane', url, {})
+    );
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const allowed = envelope(leafOnly.fetches, [
+      row('https://control.example'),
+    ]);
+    await run(allowed, () =>
+      amcFetch('src/handlers/modelsHandler.ts#controlPlane', url, {})
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

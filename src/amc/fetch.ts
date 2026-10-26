@@ -72,14 +72,14 @@ function replayable(body: RequestInit['body']): boolean {
 }
 
 /**
- * Fetch `url` under the current pins state and `scope` (default: the ambient leaf scope). A refused hop returns a
+ * Fetch `url` under the current pins state and `scope` (`undefined` = no leaf: only `outOfLeaf` counts). A refused hop returns a
  * 403 `amc_egress_denied` response instead of fetching. A caller that asked for `redirect:'manual'`/`'error'` gets
  * the raw 3xx back (its own follow-up fetch goes through this wrapper again).
  */
 export async function pinnedFetch(
   url: string | URL,
   init: RequestInit = {},
-  scope: LeafScope | undefined = leafScope.getStore(),
+  scope: LeafScope | undefined,
   site?: string
 ): Promise<Response> {
   const state = currentPinsState();

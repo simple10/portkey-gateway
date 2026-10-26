@@ -17,6 +17,7 @@ import { createLineSplitter } from '../../handlers/streamHandlerUtils';
 import GoogleApiConfig from './api';
 import { VertexBatchEmbedConfig } from './embed';
 import { GatewayError } from '../../errors/GatewayError';
+import { amcFetch } from '../../amc/fetch';
 
 const PROVIDER_CONFIG: Record<
   string,
@@ -197,7 +198,11 @@ export const GoogleFileUploadRequestHandler: RequestHandler<
   };
 
   try {
-    const request = await fetch(url, { ...options });
+    const request = await amcFetch(
+      'src/providers/google-vertex-ai/uploadFile.ts#upload',
+      url,
+      { ...options }
+    );
     if (!request.ok) {
       const error = await request.text();
       return GoogleResponseHandler(error, request.status);

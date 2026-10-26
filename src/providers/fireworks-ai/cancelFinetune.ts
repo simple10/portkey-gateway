@@ -3,6 +3,7 @@ import { Params } from '../../types/requestBody';
 import { RequestHandler } from '../types';
 import FireworksAIAPIConfig from './api';
 import { fireworkFinetuneToOpenAIFinetune } from './utils';
+import { amcFetch } from '../../amc/fetch';
 
 export const FireworkCancelFinetuneResponseTransform = (
   response: any,
@@ -44,11 +45,15 @@ export const FireworksCancelFinetuneRequestHandler: RequestHandler<
   });
 
   try {
-    const request = await fetch(baseURL + endpoint, {
-      method: 'DELETE',
-      headers,
-      body: JSON.stringify(requestBody),
-    });
+    const request = await amcFetch(
+      'src/providers/fireworks-ai/cancelFinetune.ts#cancelFinetune',
+      baseURL + endpoint,
+      {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify(requestBody),
+      }
+    );
 
     if (!request.ok) {
       const error = await request.json();

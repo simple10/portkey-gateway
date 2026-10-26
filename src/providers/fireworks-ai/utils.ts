@@ -1,4 +1,5 @@
 import { FinetuneResponse, FinetuneState, FireworksFile } from './types';
+import { amcFetch } from '../../amc/fetch';
 
 export const fireworksDatasetToOpenAIFile = (dataset: FireworksFile) => {
   const name = dataset.displayName || dataset.name;
@@ -42,7 +43,8 @@ export const getUploadEndpoint = async ({
   };
 
   try {
-    const response = await fetch(
+    const response = await amcFetch(
+      'src/providers/fireworks-ai/utils.ts#uploadEndpoint',
       `${baseURL}/datasets/${datasetId}:getUploadEndpoint`,
       {
         method: 'POST',
@@ -81,16 +83,20 @@ export const createDataset = async ({
     created: false,
     error: null,
   };
-  const response = await fetch(`${baseURL}/datasets`, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      datasetId: datasetId,
-      dataset: {
-        userUploaded: {},
-      },
-    }),
-  });
+  const response = await amcFetch(
+    'src/providers/fireworks-ai/utils.ts#createDataset',
+    `${baseURL}/datasets`,
+    {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        datasetId: datasetId,
+        dataset: {
+          userUploaded: {},
+        },
+      }),
+    }
+  );
 
   if (response.ok) {
     result.created = true;
@@ -112,7 +118,8 @@ export const validateDataset = async ({
   headers: Record<string, string>;
   baseURL: string;
 }) => {
-  const response = await fetch(
+  const response = await amcFetch(
+    'src/providers/fireworks-ai/utils.ts#validateDataset',
     `${baseURL}/datasets/${datasetId}:validateUpload`,
     {
       method: 'POST',

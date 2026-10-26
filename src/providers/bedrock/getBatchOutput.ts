@@ -7,6 +7,7 @@ import { BedrockUploadFileResponseTransforms } from './uploadFileUtils';
 import { BEDROCK } from '../../globals';
 import { generateErrorResponse } from '../utils';
 import { getAwsEndpointDomain } from './utils';
+import { amcFetch } from '../../amc/fetch';
 
 const getModelProvider = (modelId: string) => {
   let provider = '';
@@ -72,10 +73,14 @@ export const BedrockGetBatchOutputRequestHandler = async ({
       transformedRequestUrl: retrieveBatchURL,
       gatewayRequestBody: {},
     });
-    const retrieveBatchesResponse = await fetch(retrieveBatchURL, {
-      method: 'GET',
-      headers: retrieveBatchesHeaders,
-    });
+    const retrieveBatchesResponse = await amcFetch(
+      'src/providers/bedrock/getBatchOutput.ts#retrieveBatch',
+      retrieveBatchURL,
+      {
+        method: 'GET',
+        headers: retrieveBatchesHeaders,
+      }
+    );
 
     if (!retrieveBatchesResponse.ok) {
       const error = await retrieveBatchesResponse.text();
@@ -121,10 +126,14 @@ export const BedrockGetBatchOutputRequestHandler = async ({
       transformedRequestUrl: s3FileURL,
       gatewayRequestBody: {},
     });
-    const s3FileResponse = await fetch(s3FileURL, {
-      method: 'GET',
-      headers: s3FileHeaders,
-    });
+    const s3FileResponse = await amcFetch(
+      'src/providers/bedrock/getBatchOutput.ts#s3Output',
+      s3FileURL,
+      {
+        method: 'GET',
+        headers: s3FileHeaders,
+      }
+    );
     let responseStream: ReadableStream;
     if (
       s3FileResponse.headers.get('content-type')?.includes('octet-stream') &&

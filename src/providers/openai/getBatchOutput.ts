@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import OpenAIAPIConfig from './api';
 import { Options } from '../../types/requestBody';
 import { RetrieveBatchResponse } from '../types';
+import { amcFetch } from '../../amc/fetch';
 
 // Return a ReadableStream containing batches output data
 export const OpenAIGetBatchOutputRequestHandler = async ({
@@ -32,10 +33,14 @@ export const OpenAIGetBatchOutputRequestHandler = async ({
     transformedRequestUrl: retrieveBatchURL,
     gatewayRequestBody: {},
   });
-  const retrieveBatchesResponse = await fetch(retrieveBatchURL, {
-    method: 'GET',
-    headers: retrieveBatchesHeaders,
-  });
+  const retrieveBatchesResponse = await amcFetch(
+    'src/providers/openai/getBatchOutput.ts#retrieveBatch',
+    retrieveBatchURL,
+    {
+      method: 'GET',
+      headers: retrieveBatchesHeaders,
+    }
+  );
 
   const batchDetails: RetrieveBatchResponse =
     await retrieveBatchesResponse.json();
@@ -57,10 +62,14 @@ export const OpenAIGetBatchOutputRequestHandler = async ({
     transformedRequestUrl: retrieveFileContentURL,
     gatewayRequestBody: {},
   });
-  const response = fetch(retrieveFileContentURL, {
-    method: 'GET',
-    headers: retrieveFileContentHeaders,
-  });
+  const response = amcFetch(
+    'src/providers/openai/getBatchOutput.ts#fileContent',
+    retrieveFileContentURL,
+    {
+      method: 'GET',
+      headers: retrieveFileContentHeaders,
+    }
+  );
   return response;
 };
 

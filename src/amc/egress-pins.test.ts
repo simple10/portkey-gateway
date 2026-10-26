@@ -226,7 +226,9 @@ describe('pinnedFetch — modes and redirects', () => {
 
   it('enforce: an uncovered URL is refused without any fetch', async () => {
     const res = await pinsState.run(state(pinned), () =>
-      leafScope.run(provider, () => pinnedFetch(`${CF}/v1/acctB/gwB/x`, {}))
+      leafScope.run(provider, () =>
+        pinnedFetch(`${CF}/v1/acctB/gwB/x`, {}, leafScope.getStore())
+      )
     );
     expect(res.status).toBe(403);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -236,7 +238,7 @@ describe('pinnedFetch — modes and redirects', () => {
     const env = { ...pinned, mode: { '$.targets[0]': 'observe' as const } };
     const res = await pinsState.run(state(env), () =>
       leafScope.run(provider, () =>
-        pinnedFetch(`${CF}/v1/acctB/gwB/x?key=SECRET`, {})
+        pinnedFetch(`${CF}/v1/acctB/gwB/x?key=SECRET`, {}, leafScope.getStore())
       )
     );
     expect(res.status).toBe(200);
@@ -248,7 +250,7 @@ describe('pinnedFetch — modes and redirects', () => {
 
   it('EGRESS_PINS_REQUIRED with no header refuses every fetch', async () => {
     const res = await pinsState.run(state(null, true), () =>
-      pinnedFetch('https://api.openai.com/v1/chat', {})
+      pinnedFetch('https://api.openai.com/v1/chat', {}, leafScope.getStore())
     );
     expect(res.status).toBe(403);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -264,7 +266,11 @@ describe('pinnedFetch — modes and redirects', () => {
     );
     const res = await pinsState.run(state(pinned), () =>
       leafScope.run(provider, () =>
-        pinnedFetch(`${CF}/v1/acctA/gwA/x`, { method: 'GET' })
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          { method: 'GET' },
+          leafScope.getStore()
+        )
       )
     );
     expect(res.status).toBe(403);
@@ -282,7 +288,11 @@ describe('pinnedFetch — modes and redirects', () => {
     );
     const res = await pinsState.run(state(pinned), () =>
       leafScope.run(provider, () =>
-        pinnedFetch(`${CF}/v1/acctA/gwA/x`, { method: 'POST', body: '{}' })
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          { method: 'POST', body: '{}' },
+          leafScope.getStore()
+        )
       )
     );
     expect(res.status).toBe(200);
@@ -298,13 +308,17 @@ describe('pinnedFetch — modes and redirects', () => {
   it('never forwards the pins headers upstream', async () => {
     await pinsState.run(state(pinned), () =>
       leafScope.run(provider, () =>
-        pinnedFetch(`${CF}/v1/acctA/gwA/x`, {
-          headers: {
-            'x-amc-egress-pins': 'h',
-            'x-amc-request-id': 'r',
-            a: 'b',
+        pinnedFetch(
+          `${CF}/v1/acctA/gwA/x`,
+          {
+            headers: {
+              'x-amc-egress-pins': 'h',
+              'x-amc-request-id': 'r',
+              a: 'b',
+            },
           },
-        })
+          leafScope.getStore()
+        )
       )
     );
     const sent = new Headers(fetchMock.mock.calls[0][1].headers);
@@ -322,7 +336,11 @@ describe('request middleware', () => {
   app.use('*', amcEgressPins);
   app.post('/v1/chat/completions', async () =>
     withLeafScope('config.targets[0]', () =>
-      pinnedFetch(`${CF}/v1/acctA/gwA/openai/chat`, { method: 'POST' })
+      pinnedFetch(
+        `${CF}/v1/acctA/gwA/openai/chat`,
+        { method: 'POST' },
+        leafScope.getStore()
+      )
     )
   );
 

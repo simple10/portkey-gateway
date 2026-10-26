@@ -4,6 +4,7 @@ import { Options } from '../../types/requestBody';
 import { CohereGetFileResponse, CohereRetrieveBatchResponse } from './types';
 import { CohereEmbedResponseTransformBatch } from './embed';
 import { COHERE } from '../../globals';
+import { amcFetch } from '../../amc/fetch';
 
 export const CohereGetBatchOutputHandler = async ({
   c,
@@ -37,10 +38,14 @@ export const CohereGetBatchOutputHandler = async ({
       transformedRequestBody: {},
     });
     // get the batch details
-    const retrieveBatchResponse = await fetch(baseURL + endpoint, {
-      method: 'GET',
-      headers,
-    });
+    const retrieveBatchResponse = await amcFetch(
+      'src/providers/cohere/getBatchOutput.ts#retrieveBatch',
+      baseURL + endpoint,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
     if (!retrieveBatchResponse.ok) {
       const errorText = await retrieveBatchResponse.text();
       throw new Error(
@@ -57,7 +62,8 @@ export const CohereGetBatchOutputHandler = async ({
     const outputFileId = batchDetails.output_dataset_id;
 
     // get the file details
-    const retrieveFileResponse = await fetch(
+    const retrieveFileResponse = await amcFetch(
+      'src/providers/cohere/getBatchOutput.ts#retrieveFile',
       `https://api.cohere.ai/v1/datasets/${outputFileId}`,
       {
         method: 'GET',
@@ -86,10 +92,14 @@ export const CohereGetBatchOutputHandler = async ({
       start: async (controller) => {
         const fileParts = retrieveFileResponseJson.dataset.dataset_parts;
         for (const filePart of fileParts) {
-          const filePartResponse = await fetch(filePart.url, {
-            method: 'GET',
-            headers,
-          });
+          const filePartResponse = await amcFetch(
+            'src/providers/cohere/getBatchOutput.ts#filePart',
+            filePart.url,
+            {
+              method: 'GET',
+              headers,
+            }
+          );
           const arrayBuffer = await filePartResponse.arrayBuffer();
           const buf = Buffer.from(arrayBuffer);
           const avro = require('avsc');

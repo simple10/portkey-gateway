@@ -3,6 +3,7 @@ import AzureAIInferenceAPI from './api';
 import { Options } from '../../types/requestBody';
 import { RetrieveBatchResponse } from '../types';
 import { AZURE_OPEN_AI } from '../../globals';
+import { amcFetch } from '../../amc/fetch';
 
 // Return a ReadableStream containing batches output data
 export const AzureAIInferenceGetBatchOutputRequestHandler = async ({
@@ -43,10 +44,14 @@ export const AzureAIInferenceGetBatchOutputRequestHandler = async ({
     gatewayRequestBody: {},
   });
   try {
-    const retrieveBatchesResponse = await fetch(retrieveBatchURL, {
-      method: 'GET',
-      headers: retrieveBatchesHeaders,
-    });
+    const retrieveBatchesResponse = await amcFetch(
+      'src/providers/azure-ai-inference/getBatchOutput.ts#retrieveBatch',
+      retrieveBatchURL,
+      {
+        method: 'GET',
+        headers: retrieveBatchesHeaders,
+      }
+    );
 
     if (!retrieveBatchesResponse.ok) {
       const error = await retrieveBatchesResponse.text();
@@ -104,10 +109,14 @@ export const AzureAIInferenceGetBatchOutputRequestHandler = async ({
       transformedRequestUrl: retrieveFileContentURL,
       gatewayRequestBody: {},
     });
-    const response = fetch(retrieveFileContentURL, {
-      method: 'GET',
-      headers: retrieveFileContentHeaders,
-    });
+    const response = amcFetch(
+      'src/providers/azure-ai-inference/getBatchOutput.ts#fileContent',
+      retrieveFileContentURL,
+      {
+        method: 'GET',
+        headers: retrieveFileContentHeaders,
+      }
+    );
     return response;
   } catch (e) {
     return new Response(

@@ -3,6 +3,7 @@ import { createLineSplitter } from '../../handlers/streamHandlerUtils';
 import { RequestHandler } from '../types';
 import FireworksAIAPIConfig from './api';
 import { createDataset, getUploadEndpoint, validateDataset } from './utils';
+import { amcFetch } from '../../amc/fetch';
 
 export const FireworksFileUploadResponseTransform = (response: any) => {
   return response;
@@ -88,7 +89,11 @@ export const FireworkFileUploadRequestHandler: RequestHandler<
       },
     };
 
-    const uploadResponse = await fetch(preSignedUrl, options);
+    const uploadResponse = await amcFetch(
+      'src/providers/fireworks-ai/uploadFile.ts#presignedUpload',
+      preSignedUrl,
+      options
+    );
 
     if (!uploadResponse.ok) {
       throw new GatewayError('Failed to upload file');
