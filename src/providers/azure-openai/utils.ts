@@ -2,6 +2,7 @@ import { AZURE_OPEN_AI } from '../../globals';
 import { Options } from '../../types/requestBody';
 import { OpenAIErrorResponseTransform } from '../openai/utils';
 import { ErrorResponse } from '../types';
+import { amcFetch } from '../../amc/fetch';
 
 export async function getAccessTokenFromEntraId(
   tenantId: string,
@@ -18,13 +19,17 @@ export async function getAccessTokenFromEntraId(
       grant_type: 'client_credentials',
     });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
-    });
+    const response = await amcFetch(
+      'src/providers/azure-openai/utils.ts#entraToken',
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params,
+      }
+    );
 
     if (!response.ok) {
       const errorMessage = await response.text();
@@ -45,7 +50,8 @@ export async function getAzureManagedIdentityToken(
   clientId?: string
 ) {
   try {
-    const response = await fetch(
+    const response = await amcFetch(
+      'src/providers/azure-openai/utils.ts#managedIdentityToken',
       `http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${encodeURIComponent(resource)}${clientId ? `&client_id=${encodeURIComponent(clientId)}` : ''}`,
       {
         method: 'GET',
@@ -86,13 +92,17 @@ export async function getAzureWorkloadIdentityToken(
       grant_type: 'client_credentials',
     });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
-    });
+    const response = await amcFetch(
+      'src/providers/azure-openai/utils.ts#workloadIdentityToken',
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params,
+      }
+    );
 
     if (!response.ok) {
       const errorMessage = await response.text();

@@ -14,6 +14,7 @@ import { BedrockFinetuneRecord, BedrockInferenceProfile } from './types';
 import { FinetuneRequest } from '../types';
 import { BEDROCK } from '../../globals';
 import { Environment } from '../../utils/env';
+import { amcFetch } from '../../amc/fetch';
 
 export const getAwsEndpointDomain = (c: Context) =>
   Environment(c).AWS_ENDPOINT_DOMAIN || 'amazonaws.com';
@@ -296,10 +297,14 @@ export async function getAssumedRoleCredentials(
 
   let credentials: any;
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: headers,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/utils.ts#assumeRole',
+      url,
+      {
+        method: 'GET',
+        headers: headers,
+      }
+    );
 
     if (!response.ok) {
       const resp = await response.text();
@@ -466,10 +471,14 @@ export const getInferenceProfile = async (
   );
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
+    const response = await amcFetch(
+      'src/providers/bedrock/utils.ts#inferenceProfile',
+      url,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
 
     if (!response.ok) {
       throw new Error(

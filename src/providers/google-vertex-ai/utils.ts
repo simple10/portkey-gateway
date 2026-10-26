@@ -16,6 +16,7 @@ import { Context } from 'hono';
 import { env } from 'hono/adapter';
 import { ContentType, JsonSchema, Tool } from '../../types/requestBody';
 import { GoogleMessagePart } from '../google/chatComplete';
+import { amcFetch } from '../../amc/fetch';
 
 /**
  * Encodes an object as a Base64 URL-encoded string.
@@ -137,11 +138,15 @@ export const getAccessToken = async (
       assertion: jwtToken,
     });
 
-    const tokenResponse = await fetch(tokenUrl, {
-      headers: tokenHeaders,
-      body: tokenData,
-      method: 'POST',
-    });
+    const tokenResponse = await amcFetch(
+      'src/providers/google-vertex-ai/utils.ts#serviceAccountToken',
+      tokenUrl,
+      {
+        headers: tokenHeaders,
+        body: tokenData,
+        method: 'POST',
+      }
+    );
 
     const tokenJson: Record<string, any> = await tokenResponse.json();
     const putInCacheWithValue = c.get('putInCacheWithValue');

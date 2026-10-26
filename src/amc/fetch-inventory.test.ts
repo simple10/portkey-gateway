@@ -5,6 +5,7 @@ import { amcFetch } from './fetch';
 import type { PinsEnvelope } from './egress-pins';
 import { pinsState, withLeafScope } from './scope';
 import { retryRequest } from '../handlers/retryHandler';
+import { getAccessTokenFromEntraId } from '../providers/azure-openai/utils';
 
 const ROOT = join(__dirname, '..', '..');
 const SCAN_DIRS = ['src', 'plugins'];
@@ -51,6 +52,9 @@ const fileOf = (site: string) => site.split('#')[0];
 const ROUTED_FILES = [
   'src/handlers/retryHandler.ts',
   'src/handlers/realtimeHandler.ts',
+  'src/providers/azure-openai/utils.ts',
+  'src/providers/bedrock/utils.ts',
+  'src/providers/google-vertex-ai/utils.ts',
 ];
 const routed = (file: string) => ROUTED_FILES.includes(file);
 
@@ -204,6 +208,35 @@ describe('routed sites run under the pins', () => {
       retryRequest(`${CF}/v1/acctA/gwA/x`, { method: 'POST' }, 0, [], 5000)
     );
     expect(on.response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('the Entra token helper runs as credential:entra, not under the provider pins', async () => {
+    const LOGIN = 'https://login.microsoftonline.com';
+    const fetches = {
+      '$.targets[0]|provider': { K: [row('https://res.openai.azure.com')] },
+    };
+    const covered = envelope({
+      ...fetches,
+      '$.targets[0]|credential:entra': { E: [row(LOGIN, '/tenant-1')] },
+    });
+    fetchMock.mockImplementation(
+      async () => new Response(JSON.stringify({ access_token: 'tok' }))
+    );
+    expect(
+      await run(covered, () => getAccessTokenFromEntraId('tenant-1', 'id', 's'))
+    ).toBe('tok');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const uncovered = envelope({
+      ...fetches,
+      '$.targets[0]|credential:entra': { E: [row(LOGIN, '/tenant-2')] },
+    });
+    expect(
+      await run(uncovered, () =>
+        getAccessTokenFromEntraId('tenant-1', 'id', 's')
+      )
+    ).toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
