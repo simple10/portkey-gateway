@@ -15,6 +15,8 @@ import { getRuntimeKey } from 'hono/adapter';
 import { requestValidator } from './middlewares/requestValidator';
 import { hooks } from './middlewares/hooks';
 import { memoryCache } from './middlewares/cache';
+import { amcEgressPins } from './amc/middleware';
+import { egressCapabilityHandler } from './amc/capability';
 
 // Handlers
 import { proxyHandler } from './handlers/proxyHandler';
@@ -90,6 +92,12 @@ if (runtime === 'node') {
  * Returns a greeting message.
  */
 app.get('/', (c) => c.text('AI Gateway says hey!'));
+
+/**
+ * Airship (AMC): the egress-pins capability probe, and the pins state every later handler's upstream fetches run in.
+ */
+app.post('/_amc/egress-capability', egressCapabilityHandler);
+app.use('*', amcEgressPins);
 
 // Use prettyJSON middleware for all routes
 app.use('*', prettyJSON());

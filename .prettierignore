@@ -4,3 +4,4 @@ build
 .wrangler
 public
 wrangler.toml
+src/amc/__fixtures__
