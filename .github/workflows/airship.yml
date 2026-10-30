@@ -1,0 +1,49 @@
+name: Airship
+
+# The checks Airship relies on for the commit it vendors (see AIRSHIP.md). Nightly too, so an advisory published
+# against a runtime dependency shows up without a code change.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '41 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: airship-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Runtime dependency audit (must be clean)
+        run: npm audit --omit=dev --package-lock-only
+
+      - name: Install
+        run: npm ci
+
+      - name: Only src/amc/zod.ts imports zod
+        run: |
+          if grep -rnE "from ['\"]zod(/[^'\"]*)?['\"]" src plugins --include='*.ts' | grep -v '^src/amc/zod.ts:'; then
+            echo '::error::import zod through src/amc/zod.ts (AIRSHIP.md § Deviations)'; exit 1
+          fi
+
+      - name: Airship tests (src/amc, request validator)
+        run: npx jest src/amc src/middlewares
+
+      - name: Worker build
+        run: npx wrangler deploy --dry-run --outdir dist-check src/index.ts
