@@ -68,7 +68,7 @@ import {
 } from './constants';
 
 export const getRandomId = () => {
-  return 'ai_gateway_cache_' + crypto.randomUUID();
+  return 'llm_gateway_cache_' + crypto.randomUUID();
 };
 
 export const getResponseErrorEvent = (error: ResponseError): string => {
