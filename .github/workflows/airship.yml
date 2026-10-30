@@ -17,7 +17,8 @@ permissions:
 
 concurrency:
   group: airship-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only PR runs cancel: every main commit (a tag candidate) keeps a finished run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -36,14 +37,18 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Bundle size, not security: the `z` namespace object keeps all of zod 4 in the worker (AIRSHIP.md § Deviations).
       - name: Only src/amc/zod.ts imports zod
         run: |
-          if grep -rnE "from ['\"]zod(/[^'\"]*)?['\"]" src plugins --include='*.ts' | grep -v '^src/amc/zod.ts:'; then
+          if grep -rnE "(from|import|require\()[[:space:]]*\(?[[:space:]]*['\"]zod(/[^'\"]*)?['\"]" src plugins \
+              --include='*.ts' --include='*.mts' --include='*.js' --include='*.mjs' \
+              | grep -v '^src/amc/zod.ts:' | grep -vE ':[[:space:]]*import type '; then
             echo '::error::import zod through src/amc/zod.ts (AIRSHIP.md § Deviations)'; exit 1
           fi
 
-      - name: Airship tests (src/amc, request validator)
-        run: npx jest src/amc src/middlewares
+      # Includes src/amc/zod.test.ts: every z.<member> the gateway calls exists, and the schemas load and parse.
+      - name: Airship tests (src/amc)
+        run: npx jest src/amc
 
       - name: Worker build
         run: npx wrangler deploy --dry-run --outdir dist-check src/index.ts

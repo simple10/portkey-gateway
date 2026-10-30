@@ -22,9 +22,11 @@ git fetch upstream && git switch -c chore/sync-upstream main
 git merge upstream/main                       # merge, not rebase: released tags stay reachable
 npm audit fix                                 # non-forced; lockfile only
 npm audit --omit=dev                          # runtime deps must report 0
-grep -rn "from 'zod'" src plugins             # only src/amc/zod.ts may import zod directly
-# PR into main; after it merges:
-git tag -a v<version>-airship.<n> -m '...' && git push origin --tags
+# only src/amc/zod.ts may import zod: the airship workflow's guard checks it, and src/amc/zod.test.ts checks
+# that every z.<member> upstream calls is re-exported there (add the missing ones)
+# PR into main and merge it with a MERGE COMMIT (never squash or rebase: that drops the upstream parent, and the
+# next sync conflicts on every file upstream touched since the fork point). After it merges:
+git tag -a v<version>-airship.<n> -m '...' && git push origin v<version>-airship.<n>
 ```
 
 ## Deviations from upstream
@@ -37,7 +39,11 @@ git tag -a v<version>-airship.<n> -m '...' && git push origin --tags
   - `zod` 4 (upstream: 3; GHSA-mrhx-c7xc-m3w5 is fixed only in 4.6.6+). The three files that use zod import it
     from `src/amc/zod.ts`, which re-exports the members by name: zod 4's `z` namespace object would keep
     ~650 KB of unused zod in the worker bundle. `z.record` takes a key schema in zod 4. Built-in error messages
-    changed wording (`Invalid input: expected number, received string`); pass/fail and error paths did not.
+    changed wording (`Expected number, received string` and `Required` became `Invalid input: expected number,
+    received string` / `… received undefined`). Pass/fail and error paths are unchanged, except that zod 4 refuses
+    a non-finite number (a config with `1e999`, which JSON parses to `Infinity`).
+  - Dev only: `portkey-ai` (the integration tests' client) brings `openai` 4, whose optional `zod ^3` peer now
+    resolves to zod 4, so `npm ls` reports it as invalid. Nothing the tests use calls openai's zod helpers.
   - `@hono/node-server` 2 (upstream: 1; GHSA-rmxm-3fg6-px4f is fixed only in 2.1.3+), with an `overrides` entry
     because `@hono/node-ws` still declares a `^1` peer. Both are used only by the Node entry
     (`src/start-server.ts`), never by the worker.
