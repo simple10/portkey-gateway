@@ -31,6 +31,9 @@ git tag -a v<version>-airship.<n> -m '...' && git push origin v<version>-airship
 
 ## Deviations from upstream
 
+- Removed so Dependabot alerts cover only what Airship builds: `cookbook/integrations/vercel/package-lock.json` and
+  `pnpm-lock.yaml` (an example Next.js app nothing here builds or ships), and `.github/workflows/link-checker.yml`
+  (it fails on upstream's own links and files an issue weekly). If an upstream sync edits one, `git rm` it again.
 - `src/amc/` — Airship's egress pins (every upstream fetch goes through `amcFetch`) and the zod re-export below.
 - `package-lock.json` — `npm audit fix` (non-forced).
 - `package.json`:
