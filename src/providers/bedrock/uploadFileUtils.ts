@@ -28,7 +28,7 @@ import {
   MISTRAL_CONTROL_TOKENS,
 } from './constants';
 import { BedrockErrorResponse } from './embed';
-import * as z from 'zod';
+import * as z from '../../amc/zod';
 
 interface AnthropicTool {
   name: string;
