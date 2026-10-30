@@ -87,7 +87,8 @@ export const configSchema: any = z
             (h) => h.toLowerCase() === HEADER_KEYS.FORWARD_HEADERS.toLowerCase()
           ),
         {
-          message: `forward_headers must not contain the '${HEADER_KEYS.FORWARD_HEADERS}' header`,
+          message:
+            'forward_headers must not contain the gateway forward-headers header',
         }
       )
       .optional(),

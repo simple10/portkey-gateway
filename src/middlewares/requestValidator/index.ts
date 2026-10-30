@@ -117,7 +117,7 @@ export const requestValidator = (c: Context, next: any) => {
     return new Response(
       JSON.stringify({
         status: 'failure',
-        message: `Either x-${POWERED_BY}-config or x-${POWERED_BY}-provider header is required`,
+        message: 'Either a config or a provider header is required',
       }),
       {
         status: 400,
@@ -171,7 +171,8 @@ export const requestValidator = (c: Context, next: any) => {
         return new Response(
           JSON.stringify({
             status: 'failure',
-            message: `Either x-${POWERED_BY}-provider needs to be passed. Or the x-${POWERED_BY}-config header should have a valid config with provider details in it.`,
+            message:
+              'Either a provider needs to be passed, or the config should have valid provider details in it.',
           }),
           {
             status: 400,
@@ -243,7 +244,8 @@ export const requestValidator = (c: Context, next: any) => {
       return new Response(
         JSON.stringify({
           status: 'failure',
-          message: `forward_headers must not contain the '${HEADER_KEYS.FORWARD_HEADERS}' header`,
+          message:
+            'forward_headers must not contain the gateway forward-headers header',
         }),
         {
           status: 400,

@@ -57,7 +57,7 @@ export const GoogleFileUploadRequestHandler: RequestHandler<
     !vertexStorageBucketName
   ) {
     return GoogleResponseHandler(
-      'Invalid request, please provide `x-portkey-provider-model` and `x-portkey-vertex-storage-bucket-name` in the request headers',
+      'Invalid request, please provide the provider model and Vertex storage bucket name in the request headers',
       400
     );
   }

@@ -363,7 +363,7 @@ export const BedrockUploadFileRequestHandler: RequestHandler<
         JSON.stringify({
           status: 'failure',
           message:
-            'Please make sure you have x-portkey-aws-s3-bucket and x-portkey-aws-bedrock-model headers provided.',
+            'Please make sure the AWS S3 bucket and AWS Bedrock model headers are provided.',
         }),
         {
           status: 400,
