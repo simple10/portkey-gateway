@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from '../../../amc/zod';
 import {
   OLLAMA,
   VALID_PROVIDERS,

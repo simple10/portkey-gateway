@@ -4,7 +4,7 @@ import { Context } from 'hono';
 import { RequestContext } from './requestContext';
 import { ProviderContext } from './providerContext';
 import { ToolCall } from '../../types/requestBody';
-import { z } from 'zod';
+import * as z from '../../amc/zod';
 
 const LogObjectSchema = z.object({
   providerOptions: z.object({
@@ -13,7 +13,7 @@ const LogObjectSchema = z.object({
   }),
   transformedRequest: z.object({
     body: z.any(),
-    headers: z.record(z.string()),
+    headers: z.record(z.string(), z.string()),
   }),
   requestParams: z.any(),
   finalUntransformedRequest: z.object({
