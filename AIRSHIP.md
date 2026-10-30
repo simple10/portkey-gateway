@@ -31,9 +31,10 @@ git tag -a v<version>-airship.<n> -m '...' && git push origin v<version>-airship
 
 ## Deviations from upstream
 
-- Removed so Dependabot alerts cover only what Airship builds: `cookbook/integrations/vercel/package-lock.json` and
-  `pnpm-lock.yaml` (an example Next.js app nothing here builds or ships), and `.github/workflows/link-checker.yml`
-  (it fails on upstream's own links and files an issue weekly). If an upstream sync edits one, `git rm` it again.
+- Removed so Dependabot alerts cover only what Airship builds: `cookbook/integrations/vercel/` (an example Next.js
+  app nothing here builds or ships; Dependabot reads its `package.json` even without a lockfile), and
+  `.github/workflows/link-checker.yml` (it fails on upstream's own links and files an issue weekly). If an upstream
+  sync brings one back, `git rm` it again.
 - `src/amc/` — Airship's egress pins (every upstream fetch goes through `amcFetch`) and the zod re-export below.
 - `package-lock.json` — `npm audit fix` (non-forced).
 - `package.json`:
@@ -47,6 +48,9 @@ git tag -a v<version>-airship.<n> -m '...' && git push origin v<version>-airship
     a non-finite number (a config with `1e999`, which JSON parses to `Infinity`).
   - Dev only: `portkey-ai` (the integration tests' client) brings `openai` 4, whose optional `zod ^3` peer now
     resolves to zod 4, so `npm ls` reports it as invalid. Nothing the tests use calls openai's zod helpers.
+  - Dev tooling: `wrangler` 4 with `@cloudflare/workers-types` 5 and `@rollup/plugin-terser` 1 (upstream: 3, 4,
+    0.4), which clears the dev advisories that had fixes (undici, busboy, sharp, ws, esbuild, serialize-javascript).
+    `npm audit` (dev included) leaves only `deepmerge` (low, no fixed release).
   - `@hono/node-server` 2 (upstream: 1; GHSA-rmxm-3fg6-px4f is fixed only in 2.1.3+), with an `overrides` entry
     because `@hono/node-ws` still declares a `^1` peer. Both are used only by the Node entry
     (`src/start-server.ts`), never by the worker.
