@@ -67,7 +67,7 @@ export const BedrockCreateFinetuneConfig: ProviderConfig = {
     param: 'jobName',
     required: true,
     default: (value: FinetuneRequest & { job_name: string }) => {
-      return value.job_name ?? `ai-gateway-finetune-${crypto.randomUUID()}`;
+      return value.job_name ?? `llm-gateway-finetune-${crypto.randomUUID()}`;
     },
   },
   role_arn: {

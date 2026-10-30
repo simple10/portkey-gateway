@@ -38,7 +38,7 @@ export const BedrockCreateBatchConfig: ProviderConfig = {
     param: 'jobName',
     required: true,
     default: () => {
-      return `ai-gateway-batch-job-${crypto.randomUUID()}`;
+      return `llm-gateway-batch-job-${crypto.randomUUID()}`;
     },
   },
   output_data_config: {
